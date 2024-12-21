@@ -11,7 +11,7 @@ type Posts struct {
 	Name string
 	Body string
 	Date string
-	User []string
+	User string
 }
 
 var posts = Posts{
@@ -19,24 +19,23 @@ var posts = Posts{
 	Name: "Welcome to My Blog",
 	Body: "This is the first post on my new blog. I will share my thoughts on various topics.",
 	Date: "2024-10-19",
-	User: []string{"John Doe", "Didar"},
-}
+	User: "John Doe", "Didar",
+},
 
-// {
-// 	ID:   2,
-// 	Name: "Understanding Go Structs",
-// 	Body: "In this post, we will dive into how structs work in Go and how to use them efficiently.",
-// 	Date: "2024-10-20",
-// 	User: "Jane Smith",
-// },
-// {
-// 	ID:   3,
-// 	Name: "Working with HTTP in Go",
-// 	Body: "Let's explore how to build a simple web server in Go using the net/http package.",
-// 	Date: "2024-10-21",
-// 	User: "DevGuru",
-// },
-// }
+{
+	ID:   2,
+	Name: "Understanding Go Structs",
+	Body: "In this post, we will dive into how structs work in Go and how to use them efficiently.",
+	Date: "2024-10-20",
+	User: "Jane Smith",
+},
+{
+	ID:   3,
+	Name: "Working with HTTP in Go",
+	Body: "Let's explore how to build a simple web server in Go using the net/http package.",
+	Date: "2024-10-21",
+	User: "DevGuru",
+}
 
 func (p *Posts) getAllInfo() string {
 	return fmt.Sprintf("id is: %d, title is: %s, context is: %s,  date is: %s, username is: %s", p.ID, p.Name, p.Body, p.Date, p.User)
