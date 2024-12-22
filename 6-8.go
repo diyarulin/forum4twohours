@@ -6,6 +6,8 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"regexp"
+	"strconv"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -18,12 +20,21 @@ type Posts struct {
 	User string
 }
 
+var posts = []Posts{}
+var showPost = []Posts{}
+var path = "./forum.db"
+
 func index(w http.ResponseWriter, r *http.Request) {
-	var posts = []Posts{}
+	// Проверяем метод запроса
+	if r.Method != http.MethodGet {
+		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+		return
+	}
 	t, err := template.ParseFiles("templates/index.html", "templates/header.html", "templates/footer.html")
 	if err != nil {
 		fmt.Fprintf(w, err.Error())
 	}
+	posts = []Posts{}
 	// Открытие соединения с базой данных
 	path := "./forum.db"
 	db, err := sql.Open("sqlite3", path)
@@ -38,10 +49,8 @@ func index(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalf("Error selecting data: %v", err)
 	}
-
 	for res.Next() {
 		var post Posts
-		// Укажите все поля структуры для сканирования данных
 		err := res.Scan(&post.ID, &post.Name, &post.Body, &post.Date, &post.User)
 		if err != nil {
 			log.Fatalf("Error scanning data: %v", err)
@@ -52,6 +61,11 @@ func index(w http.ResponseWriter, r *http.Request) {
 	t.ExecuteTemplate(w, "index", posts)
 }
 func create(w http.ResponseWriter, r *http.Request) {
+	// Проверяем метод запроса
+	if r.Method != http.MethodGet {
+		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+		return
+	}
 	t, err := template.ParseFiles("templates/create.html", "templates/header.html", "templates/footer.html")
 	if err != nil {
 		fmt.Fprintf(w, err.Error())
@@ -59,11 +73,16 @@ func create(w http.ResponseWriter, r *http.Request) {
 	t.ExecuteTemplate(w, "create", nil)
 }
 func save_post(w http.ResponseWriter, r *http.Request) {
+	// Проверяем метод запроса
+	if r.Method != http.MethodPost {
+		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+		return
+	}
 	Name := r.FormValue("Name")
 	Body := r.FormValue("Body")
 	Date := r.FormValue("Date")
 	User := r.FormValue("User")
-	path := "./forum.db"
+
 	if Name == "" || Body == "" || Date == "" || User == "" {
 		fmt.Fprintf(w, "Information is empty")
 	} else {
@@ -97,13 +116,74 @@ func save_post(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+func show_post(w http.ResponseWriter, r *http.Request) {
+	// Проверяем метод запроса
+	if r.Method != http.MethodGet {
+		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Регулярное выражение для извлечения ID из URL
+	re := regexp.MustCompile(`^/post/([0-9]+)$`)
+	matches := re.FindStringSubmatch(r.URL.Path)
+	if matches == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Извлекаем ID из URL
+	id, err := strconv.Atoi(matches[1])
+	if err != nil {
+		http.Error(w, "Invalid post ID", http.StatusBadRequest)
+		return
+	}
+
+	// Открытие шаблонов
+	t, err := template.ParseFiles("templates/show_post.html", "templates/header.html", "templates/footer.html")
+	if err != nil {
+		http.Error(w, "Ошибка загрузки шаблонов", http.StatusInternalServerError)
+		log.Printf("Ошибка загрузки шаблонов: %v", err)
+		return
+	}
+
+	// Открытие соединения с базой данных
+	db, err := sql.Open("sqlite3", path)
+	if err != nil {
+		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
+		log.Printf("Ошибка открытия базы данных: %v", err)
+		return
+	}
+	defer db.Close()
+
+	// Выборка данных
+	var post Posts
+	err = db.QueryRow("SELECT * FROM Posts WHERE ID = ?", id).Scan(&post.ID, &post.Name, &post.Body, &post.Date, &post.User)
+	if err == sql.ErrNoRows {
+		http.NotFound(w, r)
+		return
+	} else if err != nil {
+		http.Error(w, "Ошибка выполнения запроса", http.StatusInternalServerError)
+		log.Printf("Ошибка выполнения запроса: %v", err)
+		return
+	}
+
+	// Рендеринг шаблона
+	err = t.ExecuteTemplate(w, "show_post", post)
+	if err != nil {
+		http.Error(w, "Ошибка рендеринга шаблона", http.StatusInternalServerError)
+		log.Printf("Ошибка рендеринга шаблона: %v", err)
+	}
+}
 
 func handleFunc() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", index)
+	mux.HandleFunc("/create", create)
+	mux.HandleFunc("/save_post", save_post)
+	mux.HandleFunc("/post/", show_post)
+	http.Handle("/", mux)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
-	http.HandleFunc("/", index)
-	http.HandleFunc("/create", create)
-	http.HandleFunc("/save_post", save_post)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8080", mux)
 }
 
 func main() {
