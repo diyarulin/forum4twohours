@@ -19,6 +19,12 @@ type Posts struct {
 	Date string
 	User string
 }
+type UserDetails struct {
+	Login         string
+	Password      string
+	Success       bool
+	StorageAccess string
+}
 
 var posts = []Posts{}
 var showPost = []Posts{}
@@ -174,13 +180,68 @@ func show_post(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Ошибка рендеринга шаблона: %v", err)
 	}
 }
+func auth(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodPost {
+		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+		return
+	}
 
+	if r.Method == http.MethodGet {
+		// Загрузка шаблонов
+		t, err := template.ParseFiles("templates/auth.html", "templates/header.html", "templates/footer.html")
+		if err != nil {
+			http.Error(w, "Ошибка загрузки шаблонов", http.StatusInternalServerError)
+			log.Printf("Ошибка загрузки шаблонов: %v", err)
+			return
+		}
+
+		// Рендеринг шаблона
+		err = t.ExecuteTemplate(w, "auth", nil)
+		if err != nil {
+			http.Error(w, "Ошибка рендеринга шаблона", http.StatusInternalServerError)
+			log.Printf("Ошибка рендеринга шаблона: %v", err)
+		}
+		return
+	}
+
+	// Для POST-запросов
+	data := UserDetails{
+		Login:    r.FormValue("login"),
+		Password: r.FormValue("password"),
+	}
+
+	// Здесь может быть логика для проверки пользователя.
+	// Например:
+	if data.Login == "admin" && data.Password == "password" {
+		data.Success = true
+		data.StorageAccess = "Full"
+	} else {
+		data.Success = false
+		data.StorageAccess = "None"
+	}
+
+	// Загрузка шаблонов
+	t, err := template.ParseFiles("templates/auth.html", "templates/header.html", "templates/footer.html")
+	if err != nil {
+		http.Error(w, "Ошибка загрузки шаблонов", http.StatusInternalServerError)
+		log.Printf("Ошибка загрузки шаблонов: %v", err)
+		return
+	}
+
+	// Рендеринг шаблона с данными
+	err = t.ExecuteTemplate(w, "auth", data)
+	if err != nil {
+		http.Error(w, "Ошибка рендеринга шаблона", http.StatusInternalServerError)
+		log.Printf("Ошибка рендеринга шаблона: %v", err)
+	}
+}
 func handleFunc() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", index)
 	mux.HandleFunc("/create", create)
 	mux.HandleFunc("/save_post", save_post)
 	mux.HandleFunc("/post/", show_post)
+	mux.HandleFunc("/auth/", auth)
 	http.Handle("/", mux)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	http.ListenAndServe(":8080", mux)
