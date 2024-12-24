@@ -30,7 +30,7 @@ func handleFunc() {
 	mux.HandleFunc("/create", post.CreatePost)
 	mux.HandleFunc("/save_post", post.Save_post)
 	mux.HandleFunc("/post/", post.Show_post)
-	mux.HandleFunc("/auth/", auth.Auth)
+	mux.HandleFunc("/auth", auth.Auth)
 	mux.HandleFunc("/register", auth.Register)
 	mux.HandleFunc("/save_register", auth.Save_register)
 	http.Handle("/", mux)

@@ -2,20 +2,16 @@
 {{ template "header" }}
 <main>
     <h1>Авторизация</h1>
-    {{ if .Success }}
-        <p>Добро пожаловать, {{ .Login }}! У вас {{ .StorageAccess }} доступ.</p>
-    {{ else }}
-        <p>Неверный логин или пароль. Попробуйте снова.</p>
-        <form action="/auth" method="POST">
-            <label for="login">Логин:</label>
-            <input type="text" id="login" name="login" required>
-            <br>
-            <label for="password">Пароль:</label>
-            <input type="password" id="password" name="password" required>
-            <br>
-            <button type="submit">Войти</button>
-        </form>
-    {{ end }}
+    <form action="/auth" method="POST">
+        <label for="email">Email:</label>
+        <input type="email" name="email" id="email" required>
+        <br>
+        <label for="password">Пароль:</label>
+        <input type="password" name="password" id="password" required>
+        <br>
+        <button type="submit">Войти</button>
+    </form>
+    
 </main>
 {{ template "footer" }}
 {{ end }}
