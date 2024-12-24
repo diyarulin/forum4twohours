@@ -50,8 +50,8 @@ func Show_post(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	// Выборка данных
-	var post models.Posts
-	err = db.QueryRow("SELECT * FROM Posts WHERE ID = ?", id).Scan(&post.ID, &post.Name, &post.Body, &post.Date, &post.User)
+	var post models.Post
+	err = db.QueryRow("SELECT * FROM Posts WHERE ID = ?", id).Scan(&post.ID, &post.Name, &post.Body, &post.Date)
 	if err == sql.ErrNoRows {
 		http.NotFound(w, r)
 		return

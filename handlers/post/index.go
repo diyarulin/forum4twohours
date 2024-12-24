@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-var posts = []models.Posts{}
+var posts = []models.Post{}
 
 func Index(w http.ResponseWriter, r *http.Request) {
 	// Проверяем метод запроса
@@ -21,7 +21,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Fprintf(w, err.Error())
 	}
-	posts = []models.Posts{}
+	posts = []models.Post{}
 	// Открытие соединения с базой данных
 	path := "./forum.db"
 	db, err := sql.Open("sqlite3", path)
@@ -37,8 +37,8 @@ func Index(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Error selecting data: %v", err)
 	}
 	for res.Next() {
-		var post models.Posts
-		err := res.Scan(&post.ID, &post.Name, &post.Body, &post.Date, &post.User)
+		var post models.Post
+		err := res.Scan(&post.ID, &post.Name, &post.Body, &post.Date)
 		if err != nil {
 			log.Fatalf("Error scanning data: %v", err)
 		}

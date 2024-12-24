@@ -32,20 +32,20 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Для POST-запросов
-	data := models.UserDetails{
-		Login:    r.FormValue("login"),
+	data := models.Users{
+		Email:    r.FormValue("email"),
 		Password: r.FormValue("password"),
 	}
 
 	// Здесь может быть логика для проверки пользователя.
 	// Например:
-	if data.Login == "admin" && data.Password == "password" {
-		data.Success = true
-		data.StorageAccess = "Full"
-	} else {
-		data.Success = false
-		data.StorageAccess = "None"
-	}
+	// if data.Login == "admin" && data.Password == "password" {
+	// 	data.Success = true
+	// 	data.StorageAccess = "Full"
+	// } else {
+	// 	data.Success = false
+	// 	data.StorageAccess = "None"
+	// }
 
 	// Загрузка шаблонов
 	t, err := template.ParseFiles("templates/auth.html", "templates/header.html", "templates/footer.html")

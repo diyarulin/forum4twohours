@@ -17,9 +17,8 @@ func Save_post(w http.ResponseWriter, r *http.Request) {
 	Name := r.FormValue("Name")
 	Body := r.FormValue("Body")
 	Date := r.FormValue("Date")
-	User := r.FormValue("User")
 
-	if Name == "" || Body == "" || Date == "" || User == "" {
+	if Name == "" || Body == "" || Date == "" {
 		fmt.Fprintf(w, "Information is empty")
 	} else {
 		// Открытие соединения с базой данных
@@ -32,7 +31,7 @@ func Save_post(w http.ResponseWriter, r *http.Request) {
 		defer db.Close()
 
 		// Использование подготовленного выражения для безопасной вставки данных
-		stmt, err := db.Prepare(`INSERT INTO Posts (Name, Body, Date, User) VALUES (?, ?, ?, ?)`)
+		stmt, err := db.Prepare(`INSERT INTO Posts (Name, Body, Date) VALUES (?, ?, ?)`)
 		if err != nil {
 			http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 			log.Printf("Ошибка подготовки выражения: %v", err)
@@ -40,7 +39,7 @@ func Save_post(w http.ResponseWriter, r *http.Request) {
 		}
 		defer stmt.Close()
 
-		_, err = stmt.Exec(Name, Body, Date, User)
+		_, err = stmt.Exec(Name, Body, Date)
 		if err != nil {
 			http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 			log.Printf("Ошибка вставки данных: %v", err)

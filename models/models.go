@@ -1,19 +1,16 @@
 package models
 
-type Posts struct {
+type Post struct {
 	ID   int
 	Name string
 	Body string
 	Date string
-	User string
 }
-type UserDetails struct {
-	Login         string
-	Password      string
-	Success       bool
-	StorageAccess string
+type Users struct {
+	ID       int
+	Name     string
+	Email    string
+	Password string
 }
 
 const Path = "./forum.db"
-
-var showPost = []Posts{}
