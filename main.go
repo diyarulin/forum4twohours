@@ -3,6 +3,7 @@ package main
 import (
 	"forum/handlers/auth"
 	"forum/handlers/post"
+	"log"
 	"net/http"
 	"time"
 
@@ -46,6 +47,7 @@ func handleFunc() {
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
+	log.Println("The server is listening at http://localhost:8080/")
 	server.ListenAndServe()
 }
 
