@@ -3,6 +3,7 @@ package post
 import (
 	"database/sql"
 	"fmt"
+	"forum/handlers/auth"
 	"forum/models"
 	"log"
 	"net/http"
@@ -17,17 +18,27 @@ func Save_post(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получаем данные из формы
-	userName := r.FormValue("UserName") // Имя пользователя
-	postName := r.FormValue("Name")     // Имя поста
-	body := r.FormValue("Body")
+	postName := r.FormValue("Name") // Имя поста
+	body := r.FormValue("Body")     // Тело поста
 
-	if userName == "" || postName == "" || body == "" {
-		fmt.Fprintf(w, "Information is empty")
+	// Проверка на пустые данные
+	if postName == "" || body == "" {
+		fmt.Fprintf(w, "Информация неполная")
 		return
 	}
 
-	// Генерация текущей даты и времени в строковом формате
-	currentTime := time.Now().Format("2006-01-02 15:04:05") // Форматируем как строку
+	// Получаем текущего пользователя из сессии
+	user, err := auth.GetSession(r) // Получаем текущего пользователя
+	if err != nil {
+		http.Error(w, "Ошибка получения пользователя из сессии", http.StatusUnauthorized)
+		return
+	}
+
+	// Используем имя пользователя из сессии
+	userName := user.Name
+
+	// Генерация текущей даты и времени
+	currentTime := time.Now().Format("2006-01-02 15:04:05") // Форматирование времени
 
 	// Открытие соединения с базой данных
 	db, err := sql.Open("sqlite3", models.Path)
@@ -38,17 +49,17 @@ func Save_post(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	// Использование подготовленного выражения для безопасной вставки данных
+	// Подготовка SQL запроса
 	stmt, err := db.Prepare(`INSERT INTO Posts (Name, Body, Date, Author) VALUES (?, ?, ?, ?)`)
-
 	if err != nil {
 		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
-		log.Printf("Ошибка подготовки выражения: %v", err)
+		log.Printf("Ошибка подготовки запроса: %v", err)
 		return
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(postName, body, currentTime, userName) // Передаем дату как строку
+	// Вставка данных в базу данных
+	_, err = stmt.Exec(postName, body, currentTime, userName)
 	if err != nil {
 		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 		log.Printf("Ошибка вставки данных: %v", err)

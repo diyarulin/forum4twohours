@@ -1,20 +1,23 @@
 package auth
 
 import (
-	"fmt"
 	"html/template"
 	"net/http"
 )
 
+// Register отображает страницу регистрации
 func Register(w http.ResponseWriter, r *http.Request) {
-	// Проверяем метод запроса
 	if r.Method != http.MethodGet {
 		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
 		return
 	}
 	t, err := template.ParseFiles("templates/register.html", "templates/header.html", "templates/footer.html")
 	if err != nil {
-		fmt.Fprintf(w, err.Error())
+		http.Error(w, "Ошибка загрузки шаблонов", http.StatusInternalServerError)
+		return
 	}
-	t.ExecuteTemplate(w, "register", nil)
+	err = t.ExecuteTemplate(w, "register", nil)
+	if err != nil {
+		http.Error(w, "Ошибка рендеринга шаблона", http.StatusInternalServerError)
+	}
 }

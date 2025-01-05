@@ -6,6 +6,10 @@ import (
 	"net/http"
 )
 
+type PageData struct {
+	UserName string
+}
+
 func CreatePost(w http.ResponseWriter, r *http.Request) {
 	// Проверяем метод запроса
 	if r.Method != http.MethodGet {
@@ -16,7 +20,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	// Извлекаем имя пользователя из cookie
 	cookie, err := r.Cookie("userName")
 	if err != nil {
-		// Если cookie нет, возвращаем ошибку или перенаправляем
+		// Если cookie нет, перенаправляем на страницу авторизации
 		http.Redirect(w, r, "/auth", http.StatusSeeOther)
 		return
 	}
@@ -28,11 +32,12 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Передаем имя пользователя в шаблон
-	data := map[string]string{
-		"UserName": cookie.Value, // Имя пользователя из cookie
+	// Структура данных для шаблона
+	data := PageData{
+		UserName: cookie.Value, // Имя пользователя из cookie
 	}
 
+	// Рендерим шаблон
 	err = t.ExecuteTemplate(w, "create", data)
 	if err != nil {
 		http.Error(w, "Ошибка рендеринга шаблона", http.StatusInternalServerError)
