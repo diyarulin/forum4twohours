@@ -23,8 +23,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	}
 	posts = []models.Post{}
 	// Открытие соединения с базой данных
-	path := "./forum.db"
-	db, err := sql.Open("sqlite3", path)
+	db, err := sql.Open("sqlite3", models.Path)
 	if err != nil {
 		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 		log.Printf("Ошибка открытия базы данных: %v", err)
