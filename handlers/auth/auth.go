@@ -34,7 +34,6 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Обработка POST-запроса
-
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 
@@ -66,8 +65,8 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	// Проверка email и пароля
-	var dbPassword string
-	err = db.QueryRow("SELECT Password FROM Users WHERE Email = ?", email).Scan(&dbPassword)
+	var dbPassword, userName string
+	err = db.QueryRow("SELECT Name, Password FROM Users WHERE Email = ?", email).Scan(&userName, &dbPassword)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// Если пользователь не найден
@@ -85,6 +84,14 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Неверный email или пароль", http.StatusUnauthorized)
 		return
 	}
+
+	// Установка cookie с именем пользователя
+	http.SetCookie(w, &http.Cookie{
+		Name:     "userName",
+		Value:    userName, // Имя пользователя, которое мы получили из базы
+		HttpOnly: true,     // Устанавливаем флаг HttpOnly для безопасности
+		Path:     "/",      // Устанавливаем cookie для всего сайта
+	})
 
 	// Если все успешно, перенаправляем на главную страницу
 	http.Redirect(w, r, "/", http.StatusSeeOther)

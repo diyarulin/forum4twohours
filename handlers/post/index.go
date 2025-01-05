@@ -38,7 +38,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	}
 	for res.Next() {
 		var post models.Post
-		err := res.Scan(&post.ID, &post.Name, &post.Body, &post.Date)
+		err := res.Scan(&post.ID, &post.Name, &post.Body, &post.Date, &post.Author)
 		if err != nil {
 			log.Fatalf("Error scanning data: %v", err)
 		}
