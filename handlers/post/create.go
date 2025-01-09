@@ -18,7 +18,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Извлекаем имя пользователя из cookie
-	cookie, err := r.Cookie("userName")
+	cookie, err := r.Cookie("session")
 	if err != nil {
 		// Если cookie нет, перенаправляем на страницу авторизации
 		http.Redirect(w, r, "/auth", http.StatusSeeOther)
