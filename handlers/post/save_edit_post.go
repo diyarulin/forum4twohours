@@ -24,12 +24,13 @@ func SaveEditPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получаем данные из формы
-	postID := r.FormValue("id")     // ID поста
-	postName := r.FormValue("Name") // Название поста
-	body := r.FormValue("Body")     // Текст поста
+	postID := r.FormValue("id")         // ID поста
+	postName := r.FormValue("Name")     // Название поста
+	body := r.FormValue("Body")         // Текст поста
+	category := r.FormValue("Category") // Категория поста
 
 	// Проверка на пустые данные
-	if postName == "" || body == "" {
+	if postName == "" || body == "" || category == "" {
 		http.Error(w, "Информация неполная", http.StatusBadRequest)
 		return
 	}
@@ -45,7 +46,7 @@ func SaveEditPost(w http.ResponseWriter, r *http.Request) {
 
 	// Получаем текущий пост
 	var post models.Post
-	err = db.QueryRow("SELECT ID, Name, Body, Date, Author FROM Posts WHERE ID = ?", postID).Scan(&post.ID, &post.Name, &post.Body, &post.Date, &post.Author)
+	err = db.QueryRow("SELECT ID, Name, Body, Category, Date, Author FROM Posts WHERE ID = ?", postID).Scan(&post.ID, &post.Name, &post.Body, &post.Category, &post.Date, &post.Author)
 	if err != nil {
 		http.Error(w, "Ошибка получения поста", http.StatusInternalServerError)
 		log.Printf("Ошибка получения поста: %v", err)
@@ -59,14 +60,14 @@ func SaveEditPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Обновляем пост в базе данных
-	stmt, err := db.Prepare("UPDATE Posts SET Name = ?, Body = ? WHERE ID = ?")
+	stmt, err := db.Prepare("UPDATE Posts SET Name = ?, Body = ?, Category = ? WHERE ID = ?")
 	if err != nil {
 		http.Error(w, "Ошибка подготовки запроса", http.StatusInternalServerError)
 		log.Printf("Ошибка подготовки запроса: %v", err)
 		return
 	}
 
-	_, err = stmt.Exec(postName, body, postID)
+	_, err = stmt.Exec(postName, body, category, postID)
 	if err != nil {
 		http.Error(w, "Ошибка сохранения изменений", http.StatusInternalServerError)
 		log.Printf("Ошибка сохранения изменений: %v", err)

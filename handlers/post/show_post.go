@@ -51,7 +51,7 @@ func Show_post(w http.ResponseWriter, r *http.Request) {
 
 	// Выборка данных
 	var post models.Post
-	err = db.QueryRow("SELECT * FROM Posts WHERE ID = ?", id).Scan(&post.ID, &post.Name, &post.Body, &post.Date, &post.Author)
+	err = db.QueryRow("SELECT ID, Name, Body, Category, Date, Author FROM Posts WHERE ID = ?", id).Scan(&post.ID, &post.Name, &post.Body, &post.Category, &post.Date, &post.Author)
 	if err == sql.ErrNoRows {
 		http.NotFound(w, r)
 		return

@@ -32,7 +32,8 @@ func EditPost(w http.ResponseWriter, r *http.Request) {
 
 	// Получаем текущие данные поста
 	var post models.Post
-	err = db.QueryRow("SELECT ID, Name, Body, Date, Author FROM Posts WHERE ID = ?", postID).Scan(&post.ID, &post.Name, &post.Body, &post.Date, &post.Author)
+	err = db.QueryRow("SELECT ID, Name, Body, Category, Date, Author FROM Posts WHERE ID = ?", postID).
+		Scan(&post.ID, &post.Name, &post.Body, &post.Category, &post.Date, &post.Author)
 	if err != nil {
 		http.Error(w, "Ошибка получения поста", http.StatusInternalServerError)
 		log.Printf("Ошибка получения поста: %v", err)
@@ -89,7 +90,8 @@ func DeletePost(w http.ResponseWriter, r *http.Request) {
 
 	// Получаем данные поста
 	var post models.Post
-	err = db.QueryRow("SELECT ID, Name, Body, Date, Author FROM Posts WHERE ID = ?", postID).Scan(&post.ID, &post.Name, &post.Body, &post.Date, &post.Author)
+	err = db.QueryRow("SELECT ID, Name, Body, Category, Date, Author FROM Posts WHERE ID = ?", postID).
+		Scan(&post.ID, &post.Name, &post.Body, &post.Category, &post.Date, &post.Author)
 	if err != nil {
 		http.Error(w, "Ошибка получения поста", http.StatusInternalServerError)
 		log.Printf("Ошибка получения поста: %v", err)

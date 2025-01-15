@@ -18,11 +18,12 @@ func Save_post(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получаем данные из формы
-	postName := r.FormValue("Name") // Имя поста
-	body := r.FormValue("Body")     // Тело поста
+	postName := r.FormValue("Name")     // Имя поста
+	body := r.FormValue("Body")         // Тело поста
+	category := r.FormValue("Category") // Категория поста
 
 	// Проверка на пустые данные
-	if postName == "" || body == "" {
+	if postName == "" || body == "" || category == "" {
 		fmt.Fprintf(w, "Информация неполная")
 		return
 	}
@@ -50,7 +51,7 @@ func Save_post(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	// Подготовка SQL запроса
-	stmt, err := db.Prepare(`INSERT INTO Posts (Name, Body, Date, Author) VALUES (?, ?, ?, ?)`)
+	stmt, err := db.Prepare(`INSERT INTO Posts (Name, Body, Category, Date, Author) VALUES (?, ?, ?, ?, ?)`)
 	if err != nil {
 		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 		log.Printf("Ошибка подготовки запроса: %v", err)
@@ -59,7 +60,7 @@ func Save_post(w http.ResponseWriter, r *http.Request) {
 	defer stmt.Close()
 
 	// Вставка данных в базу данных
-	_, err = stmt.Exec(postName, body, currentTime, userName)
+	_, err = stmt.Exec(postName, body, category, currentTime, userName)
 	if err != nil {
 		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 		log.Printf("Ошибка вставки данных: %v", err)

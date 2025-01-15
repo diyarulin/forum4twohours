@@ -4,13 +4,24 @@
   <h1>Редактирование поста</h1>
   <form action="/save_edit_post" method="post">
     <input type="hidden" name="id" value="{{.Post.ID}}">
+    
     <label for="Name">Название поста:</label>
     <input type="text" name="Name" id="Name" value="{{.Post.Name}}" class="form-control"><br>
+    
     <label for="Body">Текст поста:</label>
     <textarea name="Body" id="Body" class="form-control">{{.Post.Body}}</textarea><br>
-    <button class="btn btn-warning">Сохранить изменения</button>
-</form>
 
+    <label for="Category">Категория:</label>
+    <select id="Category" name="Category" class="form-control">
+      <option value="Новости" {{if eq .Post.Category "Новости"}}selected{{end}}>Новости</option>
+      <option value="Технологии" {{if eq .Post.Category "Технологии"}}selected{{end}}>Технологии</option>
+      <option value="Развлечения" {{if eq .Post.Category "Развлечения"}}selected{{end}}>Развлечения</option>
+      <option value="Спорт" {{if eq .Post.Category "Спорт"}}selected{{end}}>Спорт</option>
+      <option value="Другое" {{if eq .Post.Category "Другое"}}selected{{end}}>Другое</option>
+    </select><br><br>
+
+    <button class="btn btn-warning">Сохранить изменения</button>
+  </form>
 </main>
 {{template "footer"}}
 {{end}}
