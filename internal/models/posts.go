@@ -8,10 +8,12 @@ import (
 
 // Post структура для хранения данных поста
 type Post struct {
-	ID      int
-	Title   string
-	Content string
-	Created time.Time
+	ID       int
+	Title    string
+	Content  string
+	Category string
+	Author   string
+	Created  time.Time
 }
 
 // PostModel обёртка для соединения с базой данных
@@ -20,11 +22,11 @@ type PostModel struct {
 }
 
 // Insert добавляет новый пост в базу данных
-func (m *PostModel) Insert(title string, content string) (int, error) {
-	stmt := `INSERT INTO posts (title, content, created)
-             VALUES (?, ?, DATETIME('now'))`
+func (m *PostModel) Insert(title, content, category, author string) (int, error) {
+	stmt := `INSERT INTO posts (title, content, category, author, created) 
+	         VALUES (?, ?, ?, ?, DATETIME('now'))`
 
-	result, err := m.DB.Exec(stmt, title, content)
+	result, err := m.DB.Exec(stmt, title, content, category, author)
 	if err != nil {
 		return 0, err
 	}
@@ -39,16 +41,15 @@ func (m *PostModel) Insert(title string, content string) (int, error) {
 
 // Get возвращает пост по ID
 func (m *PostModel) Get(id int) (*Post, error) {
-	stmt := `SELECT id, title, content, created FROM posts WHERE id = ?`
+	stmt := `SELECT id, title, content, category, author, created FROM posts WHERE id = ?`
 
 	row := m.DB.QueryRow(stmt, id)
 
 	p := &Post{}
-
-	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.Created)
+	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.Category, &p.Author, &p.Created)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errors.New("record not found")
+			return nil, ErrNoRecord
 		}
 		return nil, err
 	}
@@ -58,7 +59,7 @@ func (m *PostModel) Get(id int) (*Post, error) {
 
 // Latest возвращает 10 последних постов
 func (m *PostModel) Latest() ([]*Post, error) {
-	stmt := `SELECT id, title, content, created FROM posts ORDER BY id DESC LIMIT 10`
+	stmt := `SELECT id, title, content, category, author, created FROM posts ORDER BY created DESC LIMIT 10`
 
 	rows, err := m.DB.Query(stmt)
 	if err != nil {
@@ -66,15 +67,15 @@ func (m *PostModel) Latest() ([]*Post, error) {
 	}
 	defer rows.Close()
 
-	posts := []*Post{}
+	var posts []*Post
 
 	for rows.Next() {
-		s := &Post{}
-		err = rows.Scan(&s.ID, &s.Title, &s.Content, &s.Created)
+		p := &Post{}
+		err = rows.Scan(&p.ID, &p.Title, &p.Content, &p.Category, &p.Author, &p.Created)
 		if err != nil {
 			return nil, err
 		}
-		posts = append(posts, s)
+		posts = append(posts, p)
 	}
 
 	if err = rows.Err(); err != nil {
