@@ -16,7 +16,8 @@ func Profile(w http.ResponseWriter, r *http.Request) {
 	// Получаем информацию о текущем пользователе из сессии
 	user, err := auth.GetSession(r)
 	if err != nil {
-		http.Error(w, "Пользователь не найден", http.StatusUnauthorized)
+		// Перенаправление на главную страницу
+		http.Redirect(w, r, "/auth", http.StatusFound)
 		return
 	}
 
