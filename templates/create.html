@@ -1,0 +1,19 @@
+{{define "create"}}
+{{template "header"}}
+<main class="px-3">
+  <h1>Форма добавления нового поста</h1>
+  <form method="POST" action="/save-post">
+    <label for="UserName">Имя пользователя:</label>
+    <input type="hidden" id="UserName" name="UserName" value="{{.UserName}}" readonly required><br><br>
+    
+    <label for="Name">Имя поста:</label>
+    <input type="text" id="Name" name="Name" required class="form-control"><br><br>
+
+    <label for="Body">Текст поста:</label>
+    <textarea id="Body" name="Body" required class="form-control"></textarea><br><br>
+
+    <button type="submit">Создать пост</button>
+  </form>
+</main>
+{{template "footer"}}
+{{end}}

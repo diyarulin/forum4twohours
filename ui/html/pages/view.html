@@ -10,7 +10,7 @@
         <pre><code>{{.Content}}</code></pre>
         <div class='metadata'>
             <!-- Use the new template function here -->
-            <time>Created: {{.Created}}</time>
+            <time>Created: {{humanDate .Created}}</time>
         </div>
     </div>
     {{end}}

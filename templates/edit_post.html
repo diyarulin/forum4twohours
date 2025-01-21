@@ -1,0 +1,16 @@
+{{define "edit_post"}}
+{{template "header"}}
+<main class="px-3">
+  <h1>Редактирование поста</h1>
+  <form action="/save_edit_post" method="post">
+    <input type="hidden" name="id" value="{{.Post.ID}}">
+    <label for="Name">Название поста:</label>
+    <input type="text" name="Name" id="Name" value="{{.Post.Name}}" class="form-control"><br>
+    <label for="Body">Текст поста:</label>
+    <textarea name="Body" id="Body" class="form-control">{{.Post.Body}}</textarea><br>
+    <button class="btn btn-warning">Сохранить изменения</button>
+</form>
+
+</main>
+{{template "footer"}}
+{{end}}

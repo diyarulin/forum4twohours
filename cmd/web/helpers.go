@@ -60,8 +60,44 @@ func (app *application) render(w http.ResponseWriter, status int, page string, d
 	// is any error we call the the serverError() helper.
 }
 
-func (app *application) newTemplateData(r *http.Request) *templateData {
+func (app *application) flash(w http.ResponseWriter, r *http.Request, message string) {
+	// Сохраняем сообщение во флеш
+	http.SetCookie(w, &http.Cookie{
+		Name:     "flash_message",
+		Value:    message,
+		Path:     "/",
+		Expires:  time.Now().Add(5 * time.Minute),
+		HttpOnly: true,
+	})
+}
+
+func (app *application) newTemplateData(w http.ResponseWriter, r *http.Request) *templateData {
+	// Извлекаем флеш-сообщение из cookie
+	flashMessage, err := r.Cookie("flash_message")
+	if err != nil {
+		flashMessage = nil
+	}
+
+	// Удаляем флеш-сообщение из cookie после его использования
+	if flashMessage != nil {
+		// Используем w для установки cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "flash_message",
+			Value:    "",
+			Path:     "/",
+			Expires:  time.Now().Add(-time.Hour), // Устанавливаем истекший срок
+			HttpOnly: true,
+		})
+	}
+
+	// Передаем флеш-сообщение в шаблон
+	var flash string
+	if flashMessage != nil {
+		flash = flashMessage.Value // Сохраняем текст сообщения
+	}
+
 	return &templateData{
 		CurrentYear: time.Now().Year(),
+		Flash:       flash, // Передаем флеш-сообщение как строку
 	}
 }

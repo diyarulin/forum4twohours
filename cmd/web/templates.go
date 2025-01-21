@@ -12,10 +12,12 @@ type templateData struct {
 	CurrentYear int
 	Post        *models.Post   // Один пост (для страницы просмотра одного поста)
 	Posts       []*models.Post // Список постов (например, для главной страницы)
+	Form        any
+	Flash       string
 }
 
 func humanDate(t time.Time) string {
-	return t.Format("11 Jan 22006 at 05:04")
+	return t.Format("02 Jan 2006 15:04")
 }
 
 var functions = template.FuncMap{
@@ -26,34 +28,33 @@ var functions = template.FuncMap{
 func newTemplateCache() (map[string]*template.Template, error) {
 	cache := map[string]*template.Template{}
 
-	// Find all the HTML files for pages
+	// Ищем все HTML-файлы в папке pages
 	pages, err := filepath.Glob("./ui/html/pages/*.html")
 	if err != nil {
 		return nil, err
 	}
 
 	for _, page := range pages {
-		name := filepath.Base(page)
+		name := filepath.Base(page) // Получаем имя файла, например, "home.html"
 
-		// Parse the base template
-		ts, err := template.ParseFiles("./ui/html/base.html")
+		ts, err := template.New(name).Funcs(functions).ParseFiles("./ui/html/base.html")
 		if err != nil {
 			return nil, err
 		}
 
-		// Parse partial templates and page-specific template
+		// Загружаем частичные шаблоны (например, header.html, footer.html)
 		ts, err = ts.ParseGlob("./ui/html/partials/*.html")
 		if err != nil {
 			return nil, err
 		}
 
+		// Загружаем текущую страницу (например, home.html)
 		ts, err = ts.ParseFiles(page)
 		if err != nil {
 			return nil, err
 		}
 
-		// Store the template set in the cache
-		cache[name] = ts
+		cache[name] = ts // Кладём собранный шаблон в кэш
 	}
 	return cache, nil
 }
