@@ -72,16 +72,10 @@ func (app *application) postView(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
-	userID, err := app.getCurrentUser(r)
-	if err != nil {
+	if !app.isAuthenticated(r) {
 		app.flash(w, r, "To create post you need to login first.")
-		// Если сессия отсутствует или недействительна, перенаправляем на логин
-		http.Redirect(w, r, "/user/login", http.StatusSeeOther)
-		return // Завершаем выполнение функции
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
-
-	// Используйте userID далее, если необходимо
-	_ = userID // Уберите эту строку, если используете userID
 
 	// Проверяем метод запроса
 	if r.Method == http.MethodGet {

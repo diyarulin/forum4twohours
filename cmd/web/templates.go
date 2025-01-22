@@ -9,11 +9,12 @@ import (
 
 // templateData — структура для хранения данных, передаваемых в HTML-шаблоны
 type templateData struct {
-	CurrentYear int
-	Post        *models.Post   // Один пост (для страницы просмотра одного поста)
-	Posts       []*models.Post // Список постов (например, для главной страницы)
-	Form        any
-	Flash       string
+	CurrentYear     int
+	Post            *models.Post   // Один пост (для страницы просмотра одного поста)
+	Posts           []*models.Post // Список постов (например, для главной страницы)
+	Form            any
+	Flash           string
+	IsAuthenticated bool
 }
 
 func humanDate(t time.Time) string {

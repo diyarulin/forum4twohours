@@ -97,12 +97,16 @@ func (app *application) newTemplateData(w http.ResponseWriter, r *http.Request) 
 	}
 
 	return &templateData{
-		CurrentYear: time.Now().Year(),
-		Flash:       flash, // Передаем флеш-сообщение как строку
+		CurrentYear:     time.Now().Year(),
+		Flash:           flash, // Передаем флеш-сообщение как строку
+		IsAuthenticated: app.isAuthenticated(r),
 	}
 }
 
-//
-//func (app *application) isAuthenticated(r *http.Request) bool {
-//	return app
-//}
+func (app *application) isAuthenticated(r *http.Request) bool {
+	_, err := app.getCurrentUser(r)
+	if err != nil {
+		return false
+	}
+	return true
+}
