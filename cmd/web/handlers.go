@@ -72,10 +72,6 @@ func (app *application) postView(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
-	if !app.isAuthenticated(r) {
-		app.flash(w, r, "To create post you need to login first.")
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-	}
 
 	// Проверяем метод запроса
 	if r.Method == http.MethodGet {
@@ -115,7 +111,7 @@ func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Вставляем данные в базу
-		id, err := app.posts.Insert(form.Title, form.Content)
+		id, err := app.posts.Insert(form.Title, form.Content, form.ImagePath)
 		if err != nil {
 			app.serverError(w, err)
 			return

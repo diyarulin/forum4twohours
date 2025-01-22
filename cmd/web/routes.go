@@ -13,7 +13,7 @@ func (app *application) routes() http.Handler {
 
 	// Роуты приложения
 	mux.Handle("/post/view/", http.HandlerFunc(app.postView))
-	mux.Handle("/post/create", http.HandlerFunc(app.postCreateForm))
+	mux.Handle("/post/create", app.requireAuthentication(http.HandlerFunc(app.postCreateForm)))
 	mux.Handle("/", http.HandlerFunc(app.home))
 	mux.Handle("/user/signup", http.HandlerFunc(app.userSignup))
 	mux.Handle("/user/login", http.HandlerFunc(app.userLogin))
