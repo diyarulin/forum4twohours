@@ -88,7 +88,7 @@ func (m *PostModel) Latest() ([]*Post, error) {
 
 	return posts, nil
 }
-func (m *PostModel) userPosts(user string) ([]*Post, error) {
+func (m *PostModel) UserPosts(user string) ([]*Post, error) {
 	stmt := `SELECT id, title, content, image_path,  category,  created FROM posts WHERE author = ?`
 
 	rows, err := m.DB.Query(stmt, user)
@@ -113,4 +113,16 @@ func (m *PostModel) userPosts(user string) ([]*Post, error) {
 	}
 
 	return posts, nil
+}
+func (m *PostModel) UpdatePost(title, content, imagePath, author string) error {
+	// Категория и автор могут быть заданы по умолчанию
+	defaultCategory := "Uncategorized"
+	// defaultAuthor := "Anonymous"
+	stmt := `UPDATE Posts SET title = ?, content = ?, imagePath = ? category = ? WHERE ID = ?`
+
+	_, err := m.DB.Exec(stmt, title, content, imagePath, defaultCategory, author)
+	if err != nil {
+		return err
+	}
+	return nil
 }

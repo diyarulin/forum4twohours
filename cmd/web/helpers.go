@@ -110,3 +110,6 @@ func (app *application) isAuthenticated(r *http.Request) bool {
 	}
 	return true
 }
+func (app *application) methodNotAllowed(w http.ResponseWriter) {
+	app.clientError(w, http.StatusMethodNotAllowed)
+}

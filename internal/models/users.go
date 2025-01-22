@@ -5,10 +5,11 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
-	"github.com/mattn/go-sqlite3"
-	"golang.org/x/crypto/bcrypt"
 	"strings"
 	"time"
+
+	"github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -90,13 +91,25 @@ func hashPassword(password string, salt string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-func (m *UserModel) GetAuthor(id int) (string, error) {
-	stmt := "SELECT name FROM users WHERE id = ?"
+func (m *UserModel) Get(id int) (*User, error) {
+	stmt := `SELECT name, email, hashed_password, created FROM users WHERE id = ?`
 	row := m.DB.QueryRow(stmt, id)
-	var name string
-	if err := row.Scan(&name); err != nil {
-		return "", err
+	u := &User{}
+	err := row.Scan(&u.Name, &u.Email, &u.HashedPassword, &u.Created)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNoRecord
+		}
+		return nil, err
 	}
 
-	return name, nil
+	return u, nil
+}
+func (m *UserModel) UpdatePassword(hashedPassword string, id int) error {
+	stmt := "UPDATE users SET hashed_password = ? WHERE id = ?"
+	_, err := m.DB.Exec(stmt, hashedPassword, id)
+	if err != nil {
+		return err
+	}
+	return nil
 }

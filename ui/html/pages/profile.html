@@ -1,0 +1,47 @@
+{{define "title"}}User Profile{{end}}
+{{define "main"}}
+<main>
+  <h1>User Profile</h1>
+
+  <p><strong>Name:</strong> {{.User.Name}}</p>
+  <p><strong>Email:</strong> {{.User.Email}}</p>
+  <p><strong>Password:</strong> **********</p>
+
+<h2>Change Password</h2>
+  <form method="POST" action="/user/profile/changepassword">
+    <label for="currentPassword">Current Password:</label>
+    <input type="password" id="currentPassword" name="currentPassword" required><br><br>
+
+    <label for="newPassword">New Password:</label>
+    <input type="password" id="newPassword" name="newPassword" required><br><br>
+
+    <label for="confirmPassword">Apply new Password:</label>
+    <input type="password" id="confirmPassword" name="confirmPassword" required><br><br>
+
+    <div>
+        <input type='submit' value='Change Password'>
+    </div>
+  </form>
+  <h2>Your Posts</h2>
+  {{if .Posts}}
+<table>
+    <tr>
+        <th>Title</th>
+        <th>Created</th>
+        <th>ID</th>
+    </tr>
+    {{range .Posts}}
+    <tr>
+        <td><a href='/post/view/{{.ID}}'>{{.Title}}</a></td>
+        <td>{{humanDate .Created}}</td>
+        <td> <a href="/profile/edit_post/{{.ID}}">Edit</a></td>
+        <td><a href="/profile/delete_post/{{.ID}}">Delete</a></td>
+    </tr>
+    {{end}}
+    </table>
+    </ul>
+  {{else}}
+    <p>You have no published posts.</p>
+  {{end}}
+</main>
+{{end}}

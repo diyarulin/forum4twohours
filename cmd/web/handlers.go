@@ -6,11 +6,14 @@ import (
 	"forum/internal/models"
 	"forum/internal/validator"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type postCreateForm struct {
@@ -26,6 +29,15 @@ type userSignupForm struct {
 	Email               string `form:"email"`
 	Password            string `form:"password"`
 	validator.Validator `form:"-"`
+}
+type userPost struct {
+	ID        int
+	Title     string
+	Content   string
+	ImagePath string
+	Category  string
+	Author    string
+	Created   time.Time
 }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -125,11 +137,13 @@ func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
 		}
 		id, err := app.getCurrentUser(r)
 		if err != nil {
-			fmt.Print("sss")
+			app.serverError(w, err)
+			return
 		}
-		author, err := app.users.GetAuthor(id)
+		author, err := app.users.Get(id)
 		if err != nil {
-			fmt.Print("sss")
+			app.serverError(w, err)
+			return
 		}
 
 		// Извлекаем данные из формы
@@ -137,7 +151,7 @@ func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
 			Title:     r.PostForm.Get("title"),
 			Content:   r.PostForm.Get("content"),
 			ImagePath: filePath,
-			Author:    author,
+			Author:    author.Name,
 		}
 		form.ImagePath = strings.TrimPrefix(form.ImagePath, "ui/static/upload/")
 		// Валидация полей
@@ -331,15 +345,119 @@ func (app *application) profile(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	w.Write([]byte(fmt.Sprintf("%d", id)))
-	// posts, err := app.posts.Latest()
-	// if err != nil {
-	// 	app.serverError(w, err)
-	// 	return
-	// }
-
-	// data := app.newTemplateData(w, r)
-	// data.Posts = posts
-
-	// app.render(w, http.StatusOK, "profile.html", data)
+	user, err := app.users.Get(id)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	userPosts, err := app.posts.UserPosts(user.Name)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	data := app.newTemplateData(w, r)
+	data.Posts = userPosts
+	data.User = &models.User{
+		Name:  user.Name,
+		Email: user.Email,
+	}
+	app.render(w, http.StatusOK, "profile.html", data)
 }
+func (app *application) changePassword(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		app.methodNotAllowed(w)
+		return
+	}
+	id, err := app.getCurrentUser(r)
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	currentPassword := r.FormValue("currentPassword")
+	newPassword := r.FormValue("newPassword")
+	confirmPassword := r.FormValue("confirmPassword")
+	if currentPassword == "" || newPassword == "" || confirmPassword == "" {
+		http.Error(w, "Все поля должны быть заполнены", http.StatusBadRequest)
+		return
+	}
+	if newPassword != confirmPassword {
+		http.Error(w, "Пароли не совпадают", http.StatusBadRequest)
+		return
+	}
+
+	var dbPassword string
+	user, err := app.users.Get(id)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	dbPassword = user.HashedPassword
+	err = bcrypt.CompareHashAndPassword([]byte(dbPassword), []byte(currentPassword))
+	if err != nil {
+		http.Error(w, "Неверный текущий пароль", http.StatusUnauthorized)
+		return
+	}
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, "Ошибка хэширования пароля", http.StatusInternalServerError)
+		log.Printf("Ошибка хэширования пароля: %v", err)
+		return
+	}
+	err = app.users.UpdatePassword(string(hashedPassword), id)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// Перенаправление на страницу профиля
+	http.Redirect(w, r, "/user/profile/", http.StatusSeeOther)
+}
+
+// func (app *application) SaveEditPost(w http.ResponseWriter, r *http.Request) {
+// if r.Method != http.MethodPost {
+// 	app.methodNotAllowed(w)
+// 	return
+// }
+// id, err := app.getCurrentUser(r)
+// if err != nil {
+// 	http.Redirect(w, r, "/", http.StatusFound)
+// 	return
+// }
+// author, err := app.users.GetAuthor(id)
+// if err != nil {
+// 	app.serverError(w, err)
+// 	return
+// }
+// // Получаем данные из формы
+// postID := r.FormValue("id")         // ID поста
+// postName := r.FormValue("Name")     // Название поста
+// body := r.FormValue("Body")         // Текст поста
+// category := r.FormValue("Category") // Категория поста
+
+// // Проверка на пустые данные
+// if postName == "" || body == "" || category == "" {
+// 	http.Error(w, "Информация неполная", http.StatusBadRequest)
+// 	return
+// }
+
+// // Получаем текущий пост
+// strID, err := strconv.Atoi(postID)
+// if err != nil {
+// 	app.serverError(w, err)
+// 	return
+// }
+// post, err := app.posts.Get(strID)
+// if err != nil {
+// 	app.serverError(w, err)
+// 	return
+// }
+// if post.Author != author {
+// 	http.Error(w, "Вы не можете редактировать этот пост", http.StatusForbidden)
+// 	return
+// }
+
+// err := app.posts.UpdatePost(postName, body, )
+
+// // Перенаправляем на страницу профиля
+// http.Redirect(w, r, "/profile", http.StatusSeeOther)
+// }
