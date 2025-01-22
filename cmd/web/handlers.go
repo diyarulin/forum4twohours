@@ -17,6 +17,7 @@ type postCreateForm struct {
 	Title     string
 	Content   string
 	ImagePath string
+	Author    string
 	validator.Validator
 }
 
@@ -122,11 +123,21 @@ func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
 			app.serverError(w, err)
 			return
 		}
+		id, err := app.getCurrentUser(r)
+		if err != nil {
+			fmt.Print("sss")
+		}
+		author, err := app.users.GetAuthor(id)
+		if err != nil {
+			fmt.Print("sss")
+		}
+
 		// Извлекаем данные из формы
 		form := postCreateForm{
 			Title:     r.PostForm.Get("title"),
 			Content:   r.PostForm.Get("content"),
 			ImagePath: filePath,
+			Author:    author,
 		}
 		form.ImagePath = strings.TrimPrefix(form.ImagePath, "ui/static/upload/")
 		// Валидация полей
@@ -141,7 +152,7 @@ func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Вставляем данные в базу
-		id, err := app.posts.Insert(form.Title, form.Content, form.ImagePath)
+		id, err = app.posts.Insert(form.Title, form.Content, form.ImagePath, form.Author)
 		if err != nil {
 			app.serverError(w, err)
 			return
@@ -313,4 +324,22 @@ func (app *application) userLogout(w http.ResponseWriter, r *http.Request) {
 
 	// Redirect to the home page.
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+func (app *application) profile(w http.ResponseWriter, r *http.Request) {
+	id, err := app.getCurrentUser(r)
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	w.Write([]byte(fmt.Sprintf("%d", id)))
+	// posts, err := app.posts.Latest()
+	// if err != nil {
+	// 	app.serverError(w, err)
+	// 	return
+	// }
+
+	// data := app.newTemplateData(w, r)
+	// data.Posts = posts
+
+	// app.render(w, http.StatusOK, "profile.html", data)
 }
