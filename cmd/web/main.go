@@ -1,0 +1,90 @@
+package main
+
+import (
+	"crypto/tls"
+	"database/sql"
+	"flag"
+	"forum/internal/models"
+	_ "github.com/mattn/go-sqlite3"
+	"html/template"
+	"log"
+	"net/http"
+	"os"
+	"sync"
+	"time"
+)
+
+type application struct {
+	errorLog      *log.Logger
+	infoLog       *log.Logger
+	posts         *models.PostModel
+	users         *models.UserModel
+	templateCache map[string]*template.Template
+	sessions      map[string]int
+	mu            sync.Mutex
+}
+
+func main() {
+	// Адрес порта
+	addr := flag.String("addr", ":4000", "http service address")
+	dsn := "./forum.db"
+	flag.Parse()
+
+	// Логгеры для ошибок и информации
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+
+	// Открытие базы данных
+	db, err := openDB(dsn)
+	if err != nil {
+		errorLog.Fatal(err)
+	}
+	defer db.Close()
+
+	// Инициализация кэша шаблонов
+	templateCache, err := newTemplateCache()
+	if err != nil {
+		errorLog.Fatal(err)
+	}
+
+	// Инициализация структуры приложения
+	app := application{
+		errorLog:      errorLog,
+		infoLog:       infoLog,
+		posts:         &models.PostModel{DB: db},
+		users:         &models.UserModel{DB: db},
+		templateCache: templateCache,
+		sessions:      make(map[string]int),
+	}
+
+	tlsConfig := &tls.Config{
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+	}
+
+	// Инициализация структуры сервера для использования errorLog и роутера
+	srv := &http.Server{
+		Addr:         *addr,
+		ErrorLog:     errorLog,
+		Handler:      app.routes(),
+		TLSConfig:    tlsConfig,
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
+	// Запуск сервера с поддержкой HTTPS
+	infoLog.Printf("Starting server on https://localhost%s", *addr)
+	err = srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
+	errorLog.Fatal(err)
+}
+
+func openDB(dsn string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", dsn)
+	if err != nil {
+		return nil, err
+	}
+	if err = db.Ping(); err != nil {
+		return nil, err
+	}
+	return db, nil
+}

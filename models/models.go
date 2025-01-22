@@ -1,12 +1,11 @@
 package models
 
 type Post struct {
-	ID       int
-	Name     string
-	Body     string
-	Category string
-	Date     string
-	Author   string
+	ID     int
+	Name   string
+	Body   string
+	Date   string
+	Author string
 }
 type Users struct {
 	ID       int
