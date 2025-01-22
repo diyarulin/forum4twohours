@@ -90,7 +90,7 @@ func hashPassword(password string, salt string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-func (m *UserModel) getAuthor(id string) (string, error) {
+func (m *UserModel) GetAuthor(id int) (string, error) {
 	stmt := "SELECT name FROM users WHERE id = ?"
 	row := m.DB.QueryRow(stmt, id)
 	var name string

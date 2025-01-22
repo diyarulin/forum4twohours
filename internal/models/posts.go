@@ -23,15 +23,14 @@ type PostModel struct {
 }
 
 // Insert добавляет новый пост в базу данных
-func (m *PostModel) Insert(title, content, imagePath string) (int, error) {
+func (m *PostModel) Insert(title, content, imagePath, author string) (int, error) {
 	// Категория и автор могут быть заданы по умолчанию
 	defaultCategory := "Uncategorized"
-	defaultAuthor := "Anonymous"
-
+	// defaultAuthor := "Anonymous"
 	stmt := `INSERT INTO posts (title, content, image_path, category, author, created) 
 	         VALUES (?, ?, ?, ?, ?, DATETIME('now', 'localtime'))`
 
-	result, err := m.DB.Exec(stmt, title, content, imagePath, defaultCategory, defaultAuthor)
+	result, err := m.DB.Exec(stmt, title, content, imagePath, defaultCategory, author)
 	if err != nil {
 		return 0, err
 	}

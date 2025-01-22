@@ -18,6 +18,6 @@ func (app *application) routes() http.Handler {
 	mux.Handle("/user/signup", http.HandlerFunc(app.userSignup))
 	mux.Handle("/user/login", http.HandlerFunc(app.userLogin))
 	mux.Handle("/user/logout", http.HandlerFunc(app.userLogout))
-
+	mux.Handle("/user/profile", http.HandlerFunc(app.profile))
 	return app.recoverPanic(app.logRequest(secureHeaders(mux)))
 }
