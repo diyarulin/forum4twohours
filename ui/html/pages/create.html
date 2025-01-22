@@ -1,23 +1,32 @@
 {{define "title"}}Create a New Post{{end}}
-
 {{define "main"}}
-<form action='/post/create' method='POST'>
+<form action='/post/create' method='POST' enctype="multipart/form-data">
     <div>
         <label>Title:</label>
         {{with .Form.FieldErrors.title}}
-        <label class='error'>{{.}}</label>
+            <label class='error'>{{.}}</label>
         {{end}}
         <input type='text' name='title' value='{{.Form.Title}}'>
     </div>
     <div>
         <label>Content:</label>
         {{with .Form.FieldErrors.content}}
-        <label class='error'>{{.}}</label>
+            <label class='error'>{{.}}</label>
         {{end}}
-        <textarea name='content'></textarea>
+        <textarea name='content'>{{.Form.Content}}</textarea>
     </div>
     <div>
-        <input type='submit' value='Publish post'>
+        <label>Upload File:</label>
+        <input type="file" name="image" />
+        {{if .Form.ImagePath}}
+            <div>
+                <p>Uploaded Image:</p>
+                <img src="/static/upload/{{.Form.ImagePath}}" alt="Uploaded Image" style="max-width: 300px; max-height: 300px;">
+            </div>
+        {{end}}
+    </div>
+    <div>
+        <input type='submit' value='Publish Post'>
     </div>
 </form>
 {{end}}

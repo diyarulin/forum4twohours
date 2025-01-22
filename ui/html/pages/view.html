@@ -2,14 +2,18 @@
 
 {{define "main"}}
     {{with .Post}}
-    <div class='post'>
-        <div class='metadata'>
+    <div class='snippet' style="width: 80%; margin: 0 auto; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+        <div class='metadata' style="display: flex; justify-content: space-between; align-items: center;">
             <strong>{{.Title}}</strong>
             <span>#{{.ID}}</span>
         </div>
-        <pre><code>{{.Content}}</code></pre>
+        <pre style="white-space: pre-wrap; word-wrap: break-word;"><code>{{.Content}}</code></pre>
+        {{if .ImagePath}}
+        <div class='image'>
+            <img src="/static/upload/{{.ImagePath}}" alt="Image" style="max-width: 80%; height: auto; display: block; margin: 10px auto; border: 1px solid #ddd; border-radius: 5px;">
+        </div>
+        {{end}}
         <div class='metadata'>
-            <!-- Use the new template function here -->
             <time>Created: {{humanDate .Created}}</time>
         </div>
     </div>
