@@ -5,14 +5,18 @@ import (
 	"fmt"
 	"forum/internal/models"
 	"forum/internal/validator"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type postCreateForm struct {
-	Title   string
-	Content string
+	Title     string
+	Content   string
+	ImagePath string
 	validator.Validator
 }
 
@@ -87,18 +91,44 @@ func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
 
 	// Если метод POST, обрабатываем данные формы
 	if r.Method == http.MethodPost {
-		err := r.ParseForm()
+		err := r.ParseMultipartForm(20 << 20)
 		if err != nil {
 			app.clientError(w, http.StatusBadRequest)
 			return
 		}
+		file, handler, err := r.FormFile("image")
+		if err != nil {
+			app.clientError(w, http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+		app.infoLog.Printf("Uploaded File: %+v\n", handler.Filename)
+		app.infoLog.Printf("File Size: %+v\n", handler.Size)
+		app.infoLog.Printf("MIME Header: %+v\n", handler.Header)
+		fileName := fmt.Sprintf("%d-%s", time.Now().UnixNano(), handler.Filename)
+		filePath := fmt.Sprintf("ui/static/upload/%s", fileName)
+		if err := os.MkdirAll("ui/static/upload", os.ModePerm); err != nil {
+			app.serverError(w, err)
+			return
+		}
+		dst, err := os.Create(filePath)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+		defer dst.Close()
 
+		if _, err := io.Copy(dst, file); err != nil {
+			app.serverError(w, err)
+			return
+		}
 		// Извлекаем данные из формы
 		form := postCreateForm{
-			Title:   r.PostForm.Get("title"),
-			Content: r.PostForm.Get("content"),
+			Title:     r.PostForm.Get("title"),
+			Content:   r.PostForm.Get("content"),
+			ImagePath: filePath,
 		}
-
+		form.ImagePath = strings.TrimPrefix(form.ImagePath, "ui/static/upload/")
 		// Валидация полей
 		form.CheckField(validator.NotBlank(form.Title), "title", "This field cannot be blank")
 		form.CheckField(validator.MaxChars(form.Title, 100), "title", "This field cannot be longer than 100 characters")
