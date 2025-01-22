@@ -1,63 +1,90 @@
 package main
 
 import (
-	"bytes"
-	"database/sql"
-	"encoding/gob"
-	"log"
+	"errors"
+	"github.com/google/uuid"
 	"net/http"
 	"time"
-
-	"github.com/google/uuid"
 )
 
-type sessionManager struct {
-	db *sql.DB
-}
+func (app *application) setSession(w http.ResponseWriter, userID int) string {
+	sessionID := uuid.New().String()
+	app.sessions[sessionID] = userID
 
-func newSessionManager(db *sql.DB) *sessionManager {
-	return &sessionManager{db: db}
-}
-
-type sessionData struct {
-	UserID    string
-	LastLogin time.Time
-}
-
-// Middleware for managing sessions
-func (sm *sessionManager) LoadAndSave(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var session sessionData
-
-		// Extract session token from the "Authorization" header
-		sessionToken := r.Header.Get("Authorization")
-		if sessionToken != "" {
-			// Load session from the database
-			var data []byte
-			var expiry time.Time
-			err := sm.db.QueryRow("SELECT data, expiry FROM sessions WHERE token = ?", sessionToken).Scan(&data, &expiry)
-			if err == nil && time.Now().Before(expiry) {
-				gob.NewDecoder(bytes.NewReader(data)).Decode(&session)
-				// Attach session data to the request context if needed
-				// For example: r = r.WithContext(context.WithValue(r.Context(), sessionKey, session))
-			}
-		}
-
-		// Proceed with the request
-		next.ServeHTTP(w, r)
-
-		// Save the session to the database after handling the request
-		if sessionToken == "" {
-			sessionToken = uuid.New().String()
-			w.Header().Set("Authorization", sessionToken)
-		}
-
-		var buf bytes.Buffer
-		gob.NewEncoder(&buf).Encode(session)
-		_, err := sm.db.Exec("INSERT OR REPLACE INTO sessions (token, data, expiry) VALUES (?, ?, ?)",
-			sessionToken, buf.Bytes(), time.Now().Add(12*time.Hour))
-		if err != nil {
-			log.Printf("Failed to save session: %v", err)
-		}
+	http.SetCookie(w, &http.Cookie{
+		Name:    "session_id",
+		Value:   sessionID,
+		Path:    "/",
+		Expires: time.Now().Add(24 * time.Hour),
 	})
+	return sessionID
+}
+
+func (app *application) getCurrentUser(r *http.Request) (int, error) {
+	// Получаем cookie сессии
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		return 0, errors.New("no session found")
+	}
+
+	// Проверяем, существует ли сессия
+	userID, exists := app.sessions[cookie.Value]
+	if !exists {
+		return 0, errors.New("invalid session")
+	}
+
+	return userID, nil
+}
+
+func (app *application) renewSessionToken(w http.ResponseWriter, r *http.Request) error {
+	// Получаем текущую сессию
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		return errors.New("no session found")
+	}
+
+	// Проверяем, существует ли текущая сессия
+	userID, exists := app.sessions[cookie.Value]
+	if !exists {
+		return errors.New("invalid session")
+	}
+
+	// Удаляем старую сессию
+	delete(app.sessions, cookie.Value)
+
+	// Создаем новую сессию с новым токеном
+	app.setSession(w, userID)
+
+	return nil
+}
+
+func (app *application) deleteSession(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		http.Error(w, "No session found", http.StatusUnauthorized)
+		return
+	}
+
+	// Проверка валидности сессии
+	if _, exists := app.sessions[cookie.Value]; !exists {
+		http.Error(w, "Invalid session", http.StatusUnauthorized)
+		return
+	}
+
+	// Удаление сессии из хранилища
+	delete(app.sessions, cookie.Value)
+
+	// Удаление cookie на клиенте
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_id",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	w.WriteHeader(http.StatusOK)
+	app.flash(w, r, "Logout successfully")
 }

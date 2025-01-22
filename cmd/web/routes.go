@@ -12,12 +12,12 @@ func (app *application) routes() http.Handler {
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 
 	// Роуты приложения
-	mux.Handle("/post/view/", app.sessionManager.LoadAndSave(http.HandlerFunc(app.postView)))
-	mux.Handle("/post/create", app.sessionManager.LoadAndSave(http.HandlerFunc(app.postCreateForm)))
-	mux.Handle("/", app.sessionManager.LoadAndSave(http.HandlerFunc(app.home)))
-	mux.Handle("/user/signup", app.sessionManager.LoadAndSave(http.HandlerFunc(app.userSignup)))
-	mux.Handle("/user/login", app.sessionManager.LoadAndSave(http.HandlerFunc(app.userLogin)))
-	mux.Handle("user/logout", app.sessionManager.LoadAndSave(http.HandlerFunc(app.userLogout)))
+	mux.Handle("/post/view/", http.HandlerFunc(app.postView))
+	mux.Handle("/post/create", http.HandlerFunc(app.postCreateForm))
+	mux.Handle("/", http.HandlerFunc(app.home))
+	mux.Handle("/user/signup", http.HandlerFunc(app.userSignup))
+	mux.Handle("/user/login", http.HandlerFunc(app.userLogin))
+	mux.Handle("/user/logout", http.HandlerFunc(app.userLogout))
 
 	return app.recoverPanic(app.logRequest(secureHeaders(mux)))
 }

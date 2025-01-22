@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 	"strings"
 	"time"
 )
@@ -23,13 +24,15 @@ type UserModel struct {
 }
 
 func (m *UserModel) Insert(name, email, password string) error {
-	salt := "random"
-	hashedPassword, _ := hashPassword(password, salt)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 12)
+	if err != nil {
+		return err
+	}
 
 	stmt := `INSERT INTO users (name, email, hashed_password, created) 
 	         VALUES (?, ?, ?, DATETIME('now', 'localtime'))`
 
-	_, err := m.DB.Exec(stmt, name, email, hashedPassword)
+	_, err = m.DB.Exec(stmt, name, email, string(hashedPassword))
 	if err != nil {
 		var sqliteError *sqlite3.Error
 		// Проверяем, если ошибка связана с дублированием email
@@ -46,10 +49,12 @@ func (m *UserModel) Insert(name, email, password string) error {
 }
 
 func (m *UserModel) Authenticate(email, password string) (int, error) {
+	// Retrieve the id and hashed password associated with the given email. If
+	// no matching email exists we return the ErrInvalidCredentials error.
 	var id int
-	var hashedPassword string
+	var hashedPassword []byte
 
-	stmt := `SELECT id, hashed_password FROM users WHERE email = ?`
+	stmt := "SELECT id, hashed_password FROM users WHERE email = ?"
 
 	err := m.DB.QueryRow(stmt, email).Scan(&id, &hashedPassword)
 	if err != nil {
@@ -59,12 +64,19 @@ func (m *UserModel) Authenticate(email, password string) (int, error) {
 			return 0, err
 		}
 	}
-	salt := "random"
-	hashedPassword, _ = hashPassword(password, salt)
-	hashedInputPassword, _ := hashPassword(password, salt)
-	if hashedPassword != hashedInputPassword {
-		return 0, ErrInvalidCredentials
+
+	// Check whether the hashed password and plain-text password provided match.
+	// If they don't, we return the ErrInvalidCredentials error.
+	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
+	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return 0, ErrInvalidCredentials
+		} else {
+			return 0, err
+		}
 	}
+
+	// Otherwise, the password is correct. Return the user ID.
 	return id, nil
 }
 

@@ -10,16 +10,18 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 )
 
 type application struct {
-	errorLog       *log.Logger
-	infoLog        *log.Logger
-	posts          *models.PostModel
-	users          *models.UserModel
-	templateCache  map[string]*template.Template
-	sessionManager *sessionManager
+	errorLog      *log.Logger
+	infoLog       *log.Logger
+	posts         *models.PostModel
+	users         *models.UserModel
+	templateCache map[string]*template.Template
+	sessions      map[string]int
+	mu            sync.Mutex
 }
 
 func main() {
@@ -39,9 +41,6 @@ func main() {
 	}
 	defer db.Close()
 
-	// Инициализация сессий
-	sm := newSessionManager(db)
-
 	// Инициализация кэша шаблонов
 	templateCache, err := newTemplateCache()
 	if err != nil {
@@ -50,12 +49,12 @@ func main() {
 
 	// Инициализация структуры приложения
 	app := application{
-		errorLog:       errorLog,
-		infoLog:        infoLog,
-		posts:          &models.PostModel{DB: db},
-		users:          &models.UserModel{DB: db},
-		templateCache:  templateCache,
-		sessionManager: sm,
+		errorLog:      errorLog,
+		infoLog:       infoLog,
+		posts:         &models.PostModel{DB: db},
+		users:         &models.UserModel{DB: db},
+		templateCache: templateCache,
+		sessions:      make(map[string]int),
 	}
 
 	tlsConfig := &tls.Config{
