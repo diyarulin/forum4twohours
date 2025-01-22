@@ -8,12 +8,13 @@ import (
 
 // Post структура для хранения данных поста
 type Post struct {
-	ID       int
-	Title    string
-	Content  string
-	Category string
-	Author   string
-	Created  time.Time
+	ID        int
+	Title     string
+	Content   string
+	ImagePath string
+	Category  string
+	Author    string
+	Created   time.Time
 }
 
 // PostModel обёртка для соединения с базой данных
@@ -22,15 +23,15 @@ type PostModel struct {
 }
 
 // Insert добавляет новый пост в базу данных
-func (m *PostModel) Insert(title, content string) (int, error) {
+func (m *PostModel) Insert(title, content, imagePath string) (int, error) {
 	// Категория и автор могут быть заданы по умолчанию
 	defaultCategory := "Uncategorized"
 	defaultAuthor := "Anonymous"
 
-	stmt := `INSERT INTO posts (title, content, category, author, created) 
-	         VALUES (?, ?, ?, ?, DATETIME('now', 'localtime'))`
+	stmt := `INSERT INTO posts (title, content, image_path, category, author, created) 
+	         VALUES (?, ?, ?, ?, ?, DATETIME('now', 'localtime'))`
 
-	result, err := m.DB.Exec(stmt, title, content, defaultCategory, defaultAuthor)
+	result, err := m.DB.Exec(stmt, title, content, imagePath, defaultCategory, defaultAuthor)
 	if err != nil {
 		return 0, err
 	}
@@ -45,12 +46,12 @@ func (m *PostModel) Insert(title, content string) (int, error) {
 
 // Get возвращает пост по ID
 func (m *PostModel) Get(id int) (*Post, error) {
-	stmt := `SELECT id, title, content, category, author, created FROM posts WHERE id = ?`
+	stmt := `SELECT id, title, content, image_path, category, author, created FROM posts WHERE id = ?`
 
 	row := m.DB.QueryRow(stmt, id)
 
 	p := &Post{}
-	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.Category, &p.Author, &p.Created)
+	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.ImagePath, &p.Category, &p.Author, &p.Created)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNoRecord
@@ -63,7 +64,7 @@ func (m *PostModel) Get(id int) (*Post, error) {
 
 // Latest возвращает 10 последних постов
 func (m *PostModel) Latest() ([]*Post, error) {
-	stmt := `SELECT id, title, content, category, author, created FROM posts ORDER BY created DESC LIMIT 10`
+	stmt := `SELECT id, title, content, image_path,  category, author, created FROM posts ORDER BY created DESC LIMIT 10`
 
 	rows, err := m.DB.Query(stmt)
 	if err != nil {
@@ -75,7 +76,7 @@ func (m *PostModel) Latest() ([]*Post, error) {
 
 	for rows.Next() {
 		p := &Post{}
-		err = rows.Scan(&p.ID, &p.Title, &p.Content, &p.Category, &p.Author, &p.Created)
+		err = rows.Scan(&p.ID, &p.Title, &p.Content, &p.ImagePath, &p.Category, &p.Author, &p.Created)
 		if err != nil {
 			return nil, err
 		}
