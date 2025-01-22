@@ -101,3 +101,8 @@ func (app *application) newTemplateData(w http.ResponseWriter, r *http.Request) 
 		Flash:       flash, // Передаем флеш-сообщение как строку
 	}
 }
+
+//
+//func (app *application) isAuthenticated(r *http.Request) bool {
+//	return app
+//}
