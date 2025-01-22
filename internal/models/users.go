@@ -89,3 +89,14 @@ func hashPassword(password string, salt string) (string, error) {
 	h.Write([]byte(password + salt))
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
+
+func (m *UserModel) getAuthor(id string) (string, error) {
+	stmt := "SELECT name FROM users WHERE id = ?"
+	row := m.DB.QueryRow(stmt, id)
+	var name string
+	if err := row.Scan(&name); err != nil {
+		return "", err
+	}
+
+	return name, nil
+}

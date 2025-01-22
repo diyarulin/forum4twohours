@@ -89,3 +89,29 @@ func (m *PostModel) Latest() ([]*Post, error) {
 
 	return posts, nil
 }
+func (m *PostModel) userPosts(user string) ([]*Post, error) {
+	stmt := `SELECT id, title, content, image_path,  category,  created FROM posts WHERE author = ?`
+
+	rows, err := m.DB.Query(stmt, user)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []*Post
+
+	for rows.Next() {
+		p := &Post{}
+		err = rows.Scan(&p.ID, &p.Title, &p.Content, &p.ImagePath, &p.Category, &p.Created)
+		if err != nil {
+			return nil, err
+		}
+		posts = append(posts, p)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return posts, nil
+}
