@@ -2,20 +2,35 @@
 {{define "main"}}
 <main>
   <h1>User Profile</h1>
-
-  <p><strong>Name:</strong> {{.User.Name}}</p>
-  <p><strong>Email:</strong> {{.User.Email}}</p>
+  {{with .User}}
+  <p><strong>Name:</strong> {{.Name}}</p>
+  <p><strong>Email:</strong> {{.Email}}</p>
   <p><strong>Password:</strong> **********</p>
-
+  {{end}}
 <h2>Change Password</h2>
   <form method="POST" action="/user/profile/changepassword">
-    <label for="currentPassword">Current Password:</label>
-    <input type="password" id="currentPassword" name="currentPassword" required><br><br>
+    <label>Current Password:</label>
+{{with .Form}}
+    {{with .FieldErrors.currentPassword}}
+        <label class='error'>{{.}}</label>
+    {{end}}
+{{end}}
+<input type="password" id="currentPassword" name="currentPassword" required>
 
-    <label for="newPassword">New Password:</label>
+    <label>New Password:</label>
+    {{with .Form}}
+    {{with .FieldErrors.newPassword}}
+        <label class='error'>{{.}}</label>
+    {{end}}
+{{end}}
     <input type="password" id="newPassword" name="newPassword" required><br><br>
 
-    <label for="confirmPassword">Apply new Password:</label>
+    <label>Apply new Password:</label>
+    {{with .Form}}
+    {{with .FieldErrors.confirmPassword}}
+        <label class='error'>{{.}}</label>
+    {{end}}
+{{end}}
     <input type="password" id="confirmPassword" name="confirmPassword" required><br><br>
 
     <div>

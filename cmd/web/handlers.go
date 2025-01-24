@@ -6,7 +6,6 @@ import (
 	"forum/internal/models"
 	"forum/internal/validator"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -38,6 +37,12 @@ type userPost struct {
 	Category  string
 	Author    string
 	Created   time.Time
+}
+type passwordForm struct {
+	CurrentPassword     string `form:"currentPassword"`
+	NewPassword         string `form:"newPassword"`
+	ConfirmPassword     string `form:"confirmPassword"`
+	validator.Validator `form:"-"`
 }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -205,9 +210,7 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 			Password:  r.PostForm.Get("password"),
 			Validator: validator.Validator{},
 		}
-		// Заполняем форму
 
-		// Проверка на пустые поля и валидность
 		form.CheckField(validator.NotBlank(form.Name), "name", "This field cannot be blank")
 		form.CheckField(validator.NotBlank(form.Email), "email", "This field cannot be blank")
 		form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "This field must be a valid email address")
@@ -340,6 +343,7 @@ func (app *application) userLogout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 func (app *application) profile(w http.ResponseWriter, r *http.Request) {
+
 	id, err := app.getCurrentUser(r)
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusFound)
@@ -364,6 +368,7 @@ func (app *application) profile(w http.ResponseWriter, r *http.Request) {
 	app.render(w, http.StatusOK, "profile.html", data)
 }
 func (app *application) changePassword(w http.ResponseWriter, r *http.Request) {
+
 	if r.Method != http.MethodPost {
 		app.methodNotAllowed(w)
 		return
@@ -373,34 +378,42 @@ func (app *application) changePassword(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	currentPassword := r.FormValue("currentPassword")
-	newPassword := r.FormValue("newPassword")
-	confirmPassword := r.FormValue("confirmPassword")
-	if currentPassword == "" || newPassword == "" || confirmPassword == "" {
-		http.Error(w, "Все поля должны быть заполнены", http.StatusBadRequest)
-		return
+	form := passwordForm{
+		CurrentPassword: r.FormValue("currentPassword"),
+		NewPassword:     r.FormValue("newPassword"),
+		ConfirmPassword: r.FormValue("confirmPassword"),
+		Validator:       validator.Validator{},
 	}
-	if newPassword != confirmPassword {
-		http.Error(w, "Пароли не совпадают", http.StatusBadRequest)
-		return
-	}
+	// fmt.Println(form.CurrentPassword, form.ConfirmPassword, form.NewPassword)
+	form.CheckField(validator.NotBlank(form.CurrentPassword), "currentPassword", "This field cannot be blank")
+	form.CheckField(validator.MinChars(form.CurrentPassword, 8), "currentPassword", "This field must be at least 8 characters long")
+	form.CheckField(validator.NotBlank(form.NewPassword), "newPassword", "This field cannot be blank")
+	form.CheckField(validator.MinChars(form.NewPassword, 8), "newPassword", "This field must be at least 8 characters long")
+	form.CheckField(validator.NotBlank(form.ConfirmPassword), "confirmPassword", "This field cannot be blank")
+	form.CheckField(validator.MinChars(form.ConfirmPassword, 8), "confirmPassword", "This field must be at least 8 characters long")
+	form.CheckField(validator.ComparePassword(form.NewPassword, form.ConfirmPassword), "confirmPassword", "This field must be the same as newPassword")
 
-	var dbPassword string
+	if !form.Validator.Valid() {
+		data := app.newTemplateData(w, r)
+		data.Form = form
+		app.render(w, http.StatusUnprocessableEntity, "profile.html", data)
+		return
+	}
 	user, err := app.users.Get(id)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-	dbPassword = user.HashedPassword
-	err = bcrypt.CompareHashAndPassword([]byte(dbPassword), []byte(currentPassword))
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(form.CurrentPassword))
 	if err != nil {
-		http.Error(w, "Неверный текущий пароль", http.StatusUnauthorized)
+		app.clientError(w, http.StatusUnauthorized)
 		return
 	}
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(form.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		http.Error(w, "Ошибка хэширования пароля", http.StatusInternalServerError)
-		log.Printf("Ошибка хэширования пароля: %v", err)
+		app.serverError(w, err)
 		return
 	}
 	err = app.users.UpdatePassword(string(hashedPassword), id)
