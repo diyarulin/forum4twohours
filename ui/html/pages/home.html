@@ -2,6 +2,19 @@
 
 {{define "main"}}
 <h2>Latest Posts</h2>
+<form method="GET" action="/" class="mb-3">
+    <div class="input-group">
+      <label class="form-label">Select Category:</label>
+      <select name="Category" class="form-control">
+        <option value="News" {{if eq .SelectedCategory "News"}}selected{{end}}>News</option>
+        <option value="Technology" {{if eq .SelectedCategory "Technology"}}selected{{end}}>Technology</option>
+        <option value="Funny" {{if eq .SelectedCategory "Funny"}}selected{{end}}>Funny</option>
+        <option value="Sport" {{if eq .SelectedCategory "Sport"}}selected{{end}}>Sport</option>
+        <option value="Other" {{if eq .SelectedCategory "Other"}}selected{{end}}>Other</option>
+      </select>
+      <button type="submit" class="btn btn-primary">Sort</button>
+    </div>
+  </form>
 {{if .Posts}}
 <table>
     <tr>

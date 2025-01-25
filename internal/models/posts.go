@@ -138,3 +138,26 @@ func (m *PostModel) DeletePost(id int) error {
 	}
 	return nil
 }
+func (m *PostModel) SortByCategory(category string) ([]*Post, error) {
+	stmt := `SELECT id, title, content, image_path, category, created, author FROM posts WHERE category = ?`
+	rows, err := m.DB.Query(stmt, category)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var posts []*Post
+	for rows.Next() {
+		post := &Post{}
+		err = rows.Scan(&post.ID, &post.Title, &post.Content, &post.ImagePath, &post.Category, &post.Created, &post.Author)
+		if err != nil {
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return posts, nil
+}

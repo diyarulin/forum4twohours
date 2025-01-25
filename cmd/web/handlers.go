@@ -60,20 +60,29 @@ type userLoginForm struct {
 }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		app.methodNotAllowed(w)
+		return
+	}
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
 	}
-
-	posts, err := app.posts.Latest()
+	selectedCategory := r.URL.Query().Get("Category")
+	data := app.newTemplateData(w, r)
+	var posts []*models.Post
+	var err error
+	if selectedCategory == "" {
+		posts, err = app.posts.Latest()
+	} else {
+		posts, err = app.posts.SortByCategory(selectedCategory)
+		data.SelectedCategory = selectedCategory
+	}
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-
-	data := app.newTemplateData(w, r)
 	data.Posts = posts
-
 	app.render(w, http.StatusOK, "home.html", data)
 }
 
