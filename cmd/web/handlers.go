@@ -449,6 +449,9 @@ func (app *application) EditPost(w http.ResponseWriter, r *http.Request) {
 		if idParam != "" {
 			// Если параметр есть, преобразуем его в число
 			id, err = strconv.Atoi(idParam)
+			if err != nil {
+				app.serverError(w, err)
+			}
 		} else {
 			// Иначе пытаемся извлечь ID из пути
 			path := strings.TrimPrefix(r.URL.Path, "/post/edit/")
@@ -530,6 +533,7 @@ func (app *application) EditPost(w http.ResponseWriter, r *http.Request) {
 			app.serverError(w, err)
 			return
 		}
+
 		form := editPost{
 			ID:        r.PostForm.Get("id"),
 			Title:     r.PostForm.Get("title"),
@@ -538,6 +542,7 @@ func (app *application) EditPost(w http.ResponseWriter, r *http.Request) {
 			Category:  r.PostForm.Get("category"),
 			Author:    author.Name,
 		}
+
 		form.ImagePath = strings.TrimPrefix(form.ImagePath, "ui/static/upload/")
 		// Валидация полей
 		form.CheckField(validator.NotBlank(form.Title), "title", "This field cannot be blank")
@@ -564,6 +569,9 @@ func (app *application) EditPost(w http.ResponseWriter, r *http.Request) {
 		if post.Author != form.Author {
 			app.clientError(w, http.StatusForbidden)
 			return
+		}
+		if form.ImagePath == "" {
+			form.ImagePath = post.ImagePath
 		}
 		app.infoLog.Printf("Updating post: title=%s, content=%s, imagePath=%s, category=%s, author=%s", form.Title, form.Content, form.ImagePath, form.Category, form.Author)
 		err = app.posts.UpdatePost(form.Title, form.Content, form.ImagePath, form.Category, form.Author, form.ID)
