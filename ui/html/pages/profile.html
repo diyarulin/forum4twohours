@@ -41,12 +41,15 @@
   {{if .Posts}}
 <table>
     <tr>
+        <th>ID</th>
         <th>Title</th>
         <th>Created</th>
-        <th>ID</th>
+        <th>Modify</th>
+        
     </tr>
     {{range .Posts}}
     <tr>
+        <td>#{{.ID}}</td>
         <td><a href='/post/view/{{.ID}}'>{{.Title}}</a></td>
         <td>{{humanDate .Created}}</td>
         <td> <a href="/post/edit/{{.ID}}">Edit</a></td>
