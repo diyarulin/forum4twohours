@@ -19,10 +19,19 @@ type postCreateForm struct {
 	Title     string
 	Content   string
 	ImagePath string
+	Category  string
 	Author    string
 	validator.Validator
 }
-
+type editPost struct {
+	ID        string
+	Title     string
+	Content   string
+	ImagePath string
+	Category  string
+	Author    string
+	validator.Validator
+}
 type userSignupForm struct {
 	Name                string `form:"name"`
 	Email               string `form:"email"`
@@ -42,6 +51,11 @@ type passwordForm struct {
 	CurrentPassword     string `form:"currentPassword"`
 	NewPassword         string `form:"newPassword"`
 	ConfirmPassword     string `form:"confirmPassword"`
+	validator.Validator `form:"-"`
+}
+type userLoginForm struct {
+	Email               string `form:"email"`
+	Password            string `form:"password"`
 	validator.Validator `form:"-"`
 }
 
@@ -156,6 +170,7 @@ func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
 			Title:     r.PostForm.Get("title"),
 			Content:   r.PostForm.Get("content"),
 			ImagePath: filePath,
+			Category:  r.PostForm.Get("Category"),
 			Author:    author.Name,
 		}
 		form.ImagePath = strings.TrimPrefix(form.ImagePath, "ui/static/upload/")
@@ -171,7 +186,7 @@ func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Вставляем данные в базу
-		id, err = app.posts.Insert(form.Title, form.Content, form.ImagePath, form.Author)
+		id, err = app.posts.Insert(form.Title, form.Content, form.ImagePath, form.Category, form.Author)
 		if err != nil {
 			app.serverError(w, err)
 			return
@@ -245,12 +260,6 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 
 	// Для других методов (например, если GET запрос или некорректный метод)
 	app.clientError(w, http.StatusMethodNotAllowed)
-}
-
-type userLoginForm struct {
-	Email               string `form:"email"`
-	Password            string `form:"password"`
-	validator.Validator `form:"-"`
 }
 
 func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
@@ -426,51 +435,145 @@ func (app *application) changePassword(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/user/profile/", http.StatusSeeOther)
 }
 
-// func (app *application) SaveEditPost(w http.ResponseWriter, r *http.Request) {
-// if r.Method != http.MethodPost {
-// 	app.methodNotAllowed(w)
-// 	return
-// }
-// id, err := app.getCurrentUser(r)
-// if err != nil {
-// 	http.Redirect(w, r, "/", http.StatusFound)
-// 	return
-// }
-// author, err := app.users.GetAuthor(id)
-// if err != nil {
-// 	app.serverError(w, err)
-// 	return
-// }
-// // Получаем данные из формы
-// postID := r.FormValue("id")         // ID поста
-// postName := r.FormValue("Name")     // Название поста
-// body := r.FormValue("Body")         // Текст поста
-// category := r.FormValue("Category") // Категория поста
+func (app *application) EditPost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodPost {
+		app.methodNotAllowed(w)
+		return
+	}
+	app.infoLog.Printf("Запрос: Метод: %s, Путь: %s", r.Method, r.URL.Path)
+	if r.Method == http.MethodGet {
+		idParam := r.URL.Query().Get("id")
+		var id int
+		var err error
 
-// // Проверка на пустые данные
-// if postName == "" || body == "" || category == "" {
-// 	http.Error(w, "Информация неполная", http.StatusBadRequest)
-// 	return
-// }
+		if idParam != "" {
+			// Если параметр есть, преобразуем его в число
+			id, err = strconv.Atoi(idParam)
+		} else {
+			// Иначе пытаемся извлечь ID из пути
+			path := strings.TrimPrefix(r.URL.Path, "/post/edit/")
+			id, err = strconv.Atoi(path)
+		}
 
-// // Получаем текущий пост
-// strID, err := strconv.Atoi(postID)
-// if err != nil {
-// 	app.serverError(w, err)
-// 	return
-// }
-// post, err := app.posts.Get(strID)
-// if err != nil {
-// 	app.serverError(w, err)
-// 	return
-// }
-// if post.Author != author {
-// 	http.Error(w, "Вы не можете редактировать этот пост", http.StatusForbidden)
-// 	return
-// }
+		post, err := app.posts.Get(id)
+		if err != nil {
+			if errors.Is(err, models.ErrNoRecord) {
+				app.notFound(w)
+			} else {
+				app.serverError(w, err)
+			}
+			return
+		}
 
-// err := app.posts.UpdatePost(postName, body, )
+		data := app.newTemplateData(w, r)
+		data.Form = editPost{
+			ID:        strconv.Itoa(post.ID),
+			Title:     post.Title,
+			Content:   post.Content,
+			ImagePath: post.ImagePath,
+			Category:  post.Category,
+			Author:    post.Author,
+		}
 
-// // Перенаправляем на страницу профиля
-// http.Redirect(w, r, "/profile", http.StatusSeeOther)
-// }
+		app.render(w, http.StatusOK, "edit_post.html", data)
+	}
+
+	// Если метод POST, обрабатываем данные формы
+	if r.Method == http.MethodPost {
+		err := r.ParseMultipartForm(20 << 20)
+		if err != nil {
+			app.clientError(w, http.StatusBadRequest)
+			return
+		}
+
+		var filePath string
+		var fileName string
+		file, handler, err := r.FormFile("image")
+
+		if err != nil {
+			if err != http.ErrMissingFile { // Если ошибка не связана с отсутствием файла
+				app.clientError(w, http.StatusBadRequest)
+				return
+			}
+		} else {
+			// Если файл загружен
+			defer file.Close()
+			app.infoLog.Printf("Uploaded File: %+v\n", handler.Filename)
+			app.infoLog.Printf("File Size: %+v\n", handler.Size)
+			app.infoLog.Printf("MIME Header: %+v\n", handler.Header)
+			fileName = fmt.Sprintf("%d-%s", time.Now().UnixNano(), handler.Filename)
+			filePath = fmt.Sprintf("ui/static/upload/%s", fileName)
+			if err := os.MkdirAll("ui/static/upload", os.ModePerm); err != nil {
+				app.serverError(w, err)
+				return
+			}
+			dst, err := os.Create(filePath)
+			if err != nil {
+				app.serverError(w, err)
+				return
+			}
+			defer dst.Close()
+
+			if _, err := io.Copy(dst, file); err != nil {
+				app.serverError(w, err)
+				return
+			}
+		}
+
+		id, err := app.getCurrentUser(r)
+		if err != nil {
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+		author, err := app.users.Get(id)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+		form := editPost{
+			ID:        r.PostForm.Get("id"),
+			Title:     r.PostForm.Get("title"),
+			Content:   r.PostForm.Get("content"),
+			ImagePath: filePath, // Путь к изображению только если файл был загружен
+			Category:  r.PostForm.Get("category"),
+			Author:    author.Name,
+		}
+		form.ImagePath = strings.TrimPrefix(form.ImagePath, "ui/static/upload/")
+		// Валидация полей
+		form.CheckField(validator.NotBlank(form.Title), "title", "This field cannot be blank")
+		form.CheckField(validator.MaxChars(form.Title, 100), "title", "This field cannot be longer than 100 characters")
+		form.CheckField(validator.NotBlank(form.Content), "content", "This field cannot be blank")
+		if !form.Valid() {
+			data := app.newTemplateData(w, r)
+			data.Form = form
+			app.render(w, http.StatusUnprocessableEntity, "edit_post.html", data)
+			return
+		}
+
+		// Получаем текущий пост
+		strID, err := strconv.Atoi(form.ID)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+		post, err := app.posts.Get(strID)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+		if post.Author != form.Author {
+			http.Error(w, "Вы не можете редактировать этот пост", http.StatusForbidden)
+			return
+		}
+		app.infoLog.Printf("Updating post: title=%s, content=%s, imagePath=%s, category=%s, author=%s", form.Title, form.Content, form.ImagePath, form.Category, form.Author)
+		err = app.posts.UpdatePost(form.Title, form.Content, form.ImagePath, form.Category, form.Author, form.ID)
+		if err != nil {
+			app.serverError(w, err)
+		}
+
+		// Перенаправляем на страницу профиля
+		http.Redirect(w, r, "/user/profile", http.StatusSeeOther)
+		return
+	}
+
+}

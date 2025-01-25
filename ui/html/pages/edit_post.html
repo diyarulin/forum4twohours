@@ -1,0 +1,43 @@
+{{define "title"}}Edit Post{{end}}
+{{define "main"}}
+  <form action="/post/edit/" method='POST' enctype="multipart/form-data">
+    <input type="hidden" name="id" value="{{.Form.ID}}">
+    <div>
+      <label>Title:</label>
+      {{with .Form.FieldErrors.title}}
+          <label class='error'>{{.}}</label>
+      {{end}}
+      <input type='text' name='title' value="{{.Form.Title}}"><br>
+    </div>
+    <div>
+      <label>Content:</label>
+      {{with .Form.FieldErrors.content}}
+          <label class='error'>{{.}}</label>
+      {{end}}
+      <textarea name='content'>{{.Form.Content}}</textarea>
+  </div>
+  <div>
+    <label>Upload File:</label>
+    <input type="file" name="image" />
+    {{if .Form.ImagePath}}
+        <div>
+            <p>Uploaded Image:</p>
+            <img src="/static/upload/{{.Form.ImagePath}}" alt="Uploaded Image" style="max-width: 300px; max-height: 300px;">
+        </div>
+    {{end}}
+</div>
+<div>
+  <label>Category:</label>
+  <select name="category" class="form-control">
+    <option value="News" {{if eq .Form.Category "News"}}selected{{end}}>News</option>
+    <option value="Technology" {{if eq .Form.Category "Technology"}}selected{{end}}>Technology</option>
+    <option value="Funny" {{if eq .Form.Category "Funny"}}selected{{end}}>Funny</option>
+    <option value="Sport" {{if eq .Form.Category "Sport"}}selected{{end}}>Sport</option>
+    <option value="Other" {{if eq .Form.Category "Other"}}selected{{end}}>Other</option>
+  </select><br><br>
+</div>
+<div>
+  <input type='submit' value='Publish Post'>
+</div>
+  </form>
+{{end}}

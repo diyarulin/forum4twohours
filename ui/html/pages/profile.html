@@ -49,8 +49,8 @@
     <tr>
         <td><a href='/post/view/{{.ID}}'>{{.Title}}</a></td>
         <td>{{humanDate .Created}}</td>
-        <td> <a href="/profile/edit_post/{{.ID}}">Edit</a></td>
-        <td><a href="/profile/delete_post/{{.ID}}">Delete</a></td>
+        <td> <a href="/post/edit/{{.ID}}">Edit</a></td>
+        <td><a href="/post/delete/{{.ID}}">Delete</a></td>
     </tr>
     {{end}}
     </table>

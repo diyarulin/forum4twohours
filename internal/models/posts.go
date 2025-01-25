@@ -23,14 +23,14 @@ type PostModel struct {
 }
 
 // Insert добавляет новый пост в базу данных
-func (m *PostModel) Insert(title, content, imagePath, author string) (int, error) {
+func (m *PostModel) Insert(title, content, imagePath, category, author string) (int, error) {
 	// Категория и автор могут быть заданы по умолчанию
-	defaultCategory := "Uncategorized"
+	// defaultCategory := "Uncategorized"
 	// defaultAuthor := "Anonymous"
 	stmt := `INSERT INTO posts (title, content, image_path, category, author, created) 
 	         VALUES (?, ?, ?, ?, ?, DATETIME('now', 'localtime'))`
 
-	result, err := m.DB.Exec(stmt, title, content, imagePath, defaultCategory, author)
+	result, err := m.DB.Exec(stmt, title, content, imagePath, category, author)
 	if err != nil {
 		return 0, err
 	}
@@ -114,13 +114,13 @@ func (m *PostModel) UserPosts(user string) ([]*Post, error) {
 
 	return posts, nil
 }
-func (m *PostModel) UpdatePost(title, content, imagePath, author string) error {
+func (m *PostModel) UpdatePost(title, content, imagePath, category, author, id string) error {
 	// Категория и автор могут быть заданы по умолчанию
-	defaultCategory := "Uncategorized"
+	// defaultCategory := "Uncategorized"
 	// defaultAuthor := "Anonymous"
-	stmt := `UPDATE Posts SET title = ?, content = ?, imagePath = ? category = ? WHERE ID = ?`
+	stmt := `UPDATE posts SET title = ?, content = ?, image_path = ?, category = ?, author = ? WHERE id = ?`
 
-	_, err := m.DB.Exec(stmt, title, content, imagePath, defaultCategory, author)
+	_, err := m.DB.Exec(stmt, title, content, imagePath, category, author, id)
 	if err != nil {
 		return err
 	}
