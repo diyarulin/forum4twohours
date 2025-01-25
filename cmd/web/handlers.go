@@ -430,7 +430,7 @@ func (app *application) changePassword(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-
+	app.flash(w, r, "Password changed successfully!")
 	// Перенаправление на страницу профиля
 	http.Redirect(w, r, "/user/profile/", http.StatusSeeOther)
 }
@@ -562,7 +562,7 @@ func (app *application) EditPost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if post.Author != form.Author {
-			http.Error(w, "Вы не можете редактировать этот пост", http.StatusForbidden)
+			app.clientError(w, http.StatusForbidden)
 			return
 		}
 		app.infoLog.Printf("Updating post: title=%s, content=%s, imagePath=%s, category=%s, author=%s", form.Title, form.Content, form.ImagePath, form.Category, form.Author)
@@ -570,9 +570,9 @@ func (app *application) EditPost(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			app.serverError(w, err)
 		}
-
+		app.flash(w, r, "Post edited successfully!")
 		// Перенаправляем на страницу профиля
-		http.Redirect(w, r, "/user/profile", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("/post/view/%s", form.ID), http.StatusSeeOther)
 		return
 	}
 
