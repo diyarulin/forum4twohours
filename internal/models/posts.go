@@ -126,3 +126,15 @@ func (m *PostModel) UpdatePost(title, content, imagePath, category, author, id s
 	}
 	return nil
 }
+func (m *PostModel) DeletePost(id int) error {
+	// Категория и автор могут быть заданы по умолчанию
+	// defaultCategory := "Uncategorized"
+	// defaultAuthor := "Anonymous"
+	stmt := `DELETE FROM posts WHERE id = ?`
+
+	_, err := m.DB.Exec(stmt, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}

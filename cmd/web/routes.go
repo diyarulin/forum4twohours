@@ -21,5 +21,6 @@ func (app *application) routes() http.Handler {
 	mux.Handle("/user/profile/", http.HandlerFunc(app.profile))
 	mux.Handle("/user/profile/changepassword", http.HandlerFunc(app.changePassword))
 	mux.Handle("/post/edit/", http.HandlerFunc(app.EditPost))
+	mux.Handle("/post/delete/", http.HandlerFunc(app.DeletePost))
 	return app.recoverPanic(app.logRequest(secureHeaders(mux)))
 }

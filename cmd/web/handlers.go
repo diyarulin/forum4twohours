@@ -577,3 +577,46 @@ func (app *application) EditPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+func (app *application) DeletePost(w http.ResponseWriter, r *http.Request) {
+	idParam := r.URL.Query().Get("id")
+	var id int
+	var err error
+
+	if idParam != "" {
+		// Если параметр есть, преобразуем его в число
+		id, err = strconv.Atoi(idParam)
+	} else {
+		// Иначе пытаемся извлечь ID из пути
+		path := strings.TrimPrefix(r.URL.Path, "/post/delete/")
+		id, err = strconv.Atoi(path)
+	}
+
+	post, err := app.posts.Get(id)
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
+			app.notFound(w)
+		} else {
+			app.serverError(w, err)
+		}
+		return
+	}
+	// Получаем информацию о текущем пользователе из сессии
+	userID, err := app.getCurrentUser(r)
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	author, err := app.users.Get(userID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	if post.Author != author.Name {
+		app.clientError(w, http.StatusForbidden)
+		return
+	}
+
+	err = app.posts.DeletePost(id)
+	app.flash(w, r, "Post deleted successfully!")
+	http.Redirect(w, r, "/user/profile/", http.StatusSeeOther)
+}
