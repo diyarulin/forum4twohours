@@ -8,6 +8,8 @@ import (
 
 var EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
+// var PasswordRX = regexp.MustCompile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>]).{8,20}$")
+
 type Validator struct {
 	NonFieldErrors []string
 	FieldErrors    map[string]string
@@ -65,4 +67,26 @@ func Matches(value string, rx *regexp.Regexp) bool {
 
 func ComparePassword(currentPassword, newPassword string) bool {
 	return currentPassword == newPassword
+}
+func ValidatePassword(password string) bool {
+	if len(password) < 8 || len(password) > 20 {
+		return false
+	}
+	hasLower := false
+	hasUpper := false
+	hasDigit := false
+	hasSpecial := false
+
+	for _, char := range password {
+		if char >= 'a' && char <= 'z' {
+			hasLower = true
+		} else if char >= 'A' && char <= 'Z' {
+			hasUpper = true
+		} else if char >= '0' && char <= '9' {
+			hasDigit = true
+		} else if strings.ContainsRune("!@#$%^&*(),.?\":{}|<>", char) {
+			hasSpecial = true
+		}
+	}
+	return hasLower && hasUpper && hasDigit && hasSpecial
 }

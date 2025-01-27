@@ -45,19 +45,16 @@ func (m *CommentModel) GetByPostID(postID int) ([]*Comment, error) {
 func (m *CommentModel) Insert(comment *Comment) error {
 	stmt := `INSERT INTO comments (post_id, content, author, created) VALUES (?, ?, ?, DATETIME('now', 'localtime'))`
 
-	// Используем Exec для вставки данных
 	result, err := m.DB.Exec(stmt, comment.PostID, comment.Content, comment.Author)
 	if err != nil {
 		return err
 	}
 
-	// Получаем последний вставленный ID
 	id, err := result.LastInsertId()
 	if err != nil {
 		return err
 	}
 
-	// Устанавливаем ID у комментария
 	comment.ID = int(id)
 
 	return nil

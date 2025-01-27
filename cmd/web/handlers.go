@@ -265,9 +265,10 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 
 		form.CheckField(validator.NotBlank(form.Name), "name", "This field cannot be blank")
 		form.CheckField(validator.NotBlank(form.Email), "email", "This field cannot be blank")
-		form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "This field must be a valid email address")
+		form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "This field must be a valid email address xxx@xxx.xx")
 		form.CheckField(validator.NotBlank(form.Password), "password", "This field cannot be blank")
 		form.CheckField(validator.MinChars(form.Password, 8), "password", "This field must be at least 8 characters long")
+		form.CheckField(validator.ValidatePassword(form.Password), "password", "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character (e.g., @, #, $, %).")
 
 		// Если есть ошибки, возвращаем форму с ошибками
 		if !form.Valid() {
