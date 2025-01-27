@@ -153,32 +153,43 @@ func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
 			app.clientError(w, http.StatusBadRequest)
 			return
 		}
+
+		// Пытаемся получить файл, но проверяем, прикреплен ли он
 		file, handler, err := r.FormFile("image")
-		if err != nil {
+		if err != nil && err.Error() != "http: no such file" { // проверяем, что файл не был прикреплен
 			app.clientError(w, http.StatusBadRequest)
 			return
 		}
-		defer file.Close()
-		app.infoLog.Printf("Uploaded File: %+v\n", handler.Filename)
-		app.infoLog.Printf("File Size: %+v\n", handler.Size)
-		app.infoLog.Printf("MIME Header: %+v\n", handler.Header)
-		fileName := fmt.Sprintf("%d-%s", time.Now().UnixNano(), handler.Filename)
-		filePath := fmt.Sprintf("ui/static/upload/%s", fileName)
-		if err := os.MkdirAll("ui/static/upload", os.ModePerm); err != nil {
-			app.serverError(w, err)
-			return
-		}
-		dst, err := os.Create(filePath)
-		if err != nil {
-			app.serverError(w, err)
-			return
-		}
-		defer dst.Close()
 
-		if _, err := io.Copy(dst, file); err != nil {
-			app.serverError(w, err)
-			return
+		var filePath string
+		if err == nil {
+			// Файл был прикреплен, обрабатываем его
+			defer file.Close()
+			app.infoLog.Printf("Uploaded File: %+v\n", handler.Filename)
+			app.infoLog.Printf("File Size: %+v\n", handler.Size)
+			app.infoLog.Printf("MIME Header: %+v\n", handler.Header)
+			fileName := fmt.Sprintf("%d-%s", time.Now().UnixNano(), handler.Filename)
+			filePath = fmt.Sprintf("ui/static/upload/%s", fileName)
+			if err := os.MkdirAll("ui/static/upload", os.ModePerm); err != nil {
+				app.serverError(w, err)
+				return
+			}
+			dst, err := os.Create(filePath)
+			if err != nil {
+				app.serverError(w, err)
+				return
+			}
+			defer dst.Close()
+
+			if _, err := io.Copy(dst, file); err != nil {
+				app.serverError(w, err)
+				return
+			}
+		} else {
+			// Если файл не был прикреплен, оставляем filePath пустым
+			filePath = ""
 		}
+
 		id, err := app.getCurrentUser(r)
 		if err != nil {
 			app.serverError(w, err)
@@ -199,6 +210,7 @@ func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
 			Author:    author.Name,
 		}
 		form.ImagePath = strings.TrimPrefix(form.ImagePath, "ui/static/upload/")
+
 		// Валидация полей
 		form.CheckField(validator.NotBlank(form.Title), "title", "This field cannot be blank")
 		form.CheckField(validator.MaxChars(form.Title, 100), "title", "This field cannot be longer than 100 characters")
@@ -649,7 +661,17 @@ func (app *application) DeletePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = app.posts.DeletePost(id)
+	path, err := app.posts.DeletePost(id)
+	if err != nil {
+		app.serverError(w, err)
+	}
+	if path != "" {
+		err = os.Remove("./ui/static/upload/" + path)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+	}
 	app.flash(w, r, "Post deleted successfully!")
 	http.Redirect(w, r, "/user/profile/", http.StatusSeeOther)
 }

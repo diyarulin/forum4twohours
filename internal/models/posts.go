@@ -126,18 +126,21 @@ func (m *PostModel) UpdatePost(title, content, imagePath, category, author, id s
 	}
 	return nil
 }
-func (m *PostModel) DeletePost(id int) error {
-	// Категория и автор могут быть заданы по умолчанию
-	// defaultCategory := "Uncategorized"
-	// defaultAuthor := "Anonymous"
-	stmt := `DELETE FROM posts WHERE id = ?`
-
-	_, err := m.DB.Exec(stmt, id)
+func (m *PostModel) DeletePost(id int) (string, error) {
+	stmt1 := `SELECT image_path FROM posts WHERE id = ?`
+	stmt2 := `DELETE FROM posts WHERE id = ?`
+	var imagePath string
+	err := m.DB.QueryRow(stmt1, id).Scan(&imagePath)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	_, err = m.DB.Exec(stmt2, id)
+	if err != nil {
+		return "", err
+	}
+	return imagePath, nil
 }
+
 func (m *PostModel) SortByCategory(category string) ([]*Post, error) {
 	stmt := `SELECT id, title, content, image_path, category, created, author FROM posts WHERE category = ?`
 	rows, err := m.DB.Query(stmt, category)
