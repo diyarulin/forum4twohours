@@ -14,6 +14,8 @@ type templateData struct {
 	Posts            []*models.Post // Список постов (например, для главной страницы)
 	User             *models.User
 	Users            []*models.User
+	Comment          *models.Comment
+	Comments         []*models.Comment
 	Form             any
 	SelectedCategory string
 	Flash            string

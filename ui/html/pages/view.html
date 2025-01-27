@@ -21,4 +21,40 @@
         </div>
     </div>
     {{end}}
+
+    <h3>Comments</h3>
+    
+    {{if .Comments}}
+        <ul>
+            {{range .Comments}}
+            <li style="padding: 10px; border-bottom: 1px solid #ddd;">
+                <strong>{{.Author}}</strong> <em>{{humanDate .Created}}</em>
+                <p>{{.Content}}</p>
+                
+                <!-- Edit and Delete buttons -->
+                <div style="margin-top: 10px;">
+                    {{if and $.User (eq .Author $.User.Name)}}
+                    <form action="/comments/delete" method="post" style="display: inline;">
+                        <input type="hidden" name="comment_id" value="{{.ID}}">
+                        <input type="hidden" name="post_id" value="{{.PostID}}">
+                        <button type="submit" style="color: red;">Delete</button>
+                    </form>
+                    {{end}}
+                </div>
+            </li>
+            {{end}}
+        </ul>
+    {{else}}
+        <p>No comments yet. Be the first to comment!</p>
+    {{end}}
+    {{if .IsAuthenticated}}
+    <h3>Add a Comment</h3>
+    <form action="/comments/add" method="post">
+        <input type="hidden" name="post_id" value="{{.Post.ID}}">
+        <input type="hidden" name="author" value="{{.User.Name}}">
+        <label for="content">Comment:</label><br>
+        <textarea id="content" name="content" rows="4" required></textarea><br><br>
+        <button type="submit">Add Comment</button>
+    </form>
+    {{end}}
 {{end}}

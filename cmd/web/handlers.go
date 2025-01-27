@@ -110,9 +110,25 @@ func (app *application) postView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	comments, err := app.comments.GetByPostID(id)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 	data := app.newTemplateData(w, r)
 	data.Post = post
-
+	data.Comments = comments
+	if app.isAuthenticated(r) {
+		userId, err := app.getCurrentUser(r)
+		if err != nil {
+			app.clientError(w, http.StatusUnauthorized)
+		}
+		user, err := app.users.Get(userId)
+		if err != nil {
+			app.serverError(w, err)
+		}
+		data.User = user
+	}
 	app.render(w, http.StatusOK, "view.html", data)
 }
 
@@ -636,4 +652,109 @@ func (app *application) DeletePost(w http.ResponseWriter, r *http.Request) {
 	err = app.posts.DeletePost(id)
 	app.flash(w, r, "Post deleted successfully!")
 	http.Redirect(w, r, "/user/profile/", http.StatusSeeOther)
+}
+func (app *application) getComments(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		app.methodNotAllowed(w)
+		return
+	}
+
+	postIDStr := r.URL.Query().Get("post_id")
+	if postIDStr == "" {
+		http.Error(w, "post_id is required", http.StatusBadRequest)
+		return
+	}
+
+	postID, err := strconv.Atoi(postIDStr)
+	if err != nil {
+		http.Error(w, "invalid post_id", http.StatusBadRequest)
+		return
+	}
+
+	comments, err := app.comments.GetByPostID(postID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	data := app.newTemplateData(w, r)
+	data.Comments = comments
+	app.render(w, http.StatusOK, "comments.html", data)
+}
+func (app *application) addComment(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		app.methodNotAllowed(w)
+		return
+	}
+	idParam := r.FormValue("post_id")
+	var id int
+	var err error
+	app.infoLog.Printf("ID is %s", idParam)
+
+	if idParam != "" {
+		id, err = strconv.Atoi(idParam)
+	} else {
+		path := strings.TrimPrefix(r.URL.Path, "/post/view/")
+		id, err = strconv.Atoi(path)
+	}
+	content := r.FormValue("content")
+	author := r.FormValue("author")
+
+	comment := &models.Comment{
+		PostID:  id,
+		Author:  author,
+		Content: content,
+		Created: time.Now(),
+	}
+
+	// Сохраняем комментарий в базе данных
+	err = app.comments.Insert(comment)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// Перенаправляем на страницу поста с комментариями
+	app.flash(w, r, "Comment added successfully!")
+	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", id), http.StatusSeeOther)
+	return
+}
+
+func (app *application) deleteComment(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		app.methodNotAllowed(w)
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	commentIDStr := r.Form.Get("comment_id")
+	postIDStr := r.Form.Get("post_id")
+
+	if commentIDStr == "" || postIDStr == "" {
+		http.Error(w, "comment_id and post_id are required", http.StatusBadRequest)
+		return
+	}
+
+	commentID, err := strconv.Atoi(commentIDStr)
+	if err != nil {
+		http.Error(w, "invalid comment_id", http.StatusBadRequest)
+		return
+	}
+
+	// Удаляем комментарий из базы
+	err = app.comments.Delete(commentID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// Перенаправляем на страницу поста
+	postID, _ := strconv.Atoi(postIDStr)
+	app.flash(w, r, "Comment deleted successfully!")
+	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", postID), http.StatusSeeOther)
 }

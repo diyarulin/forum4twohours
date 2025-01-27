@@ -22,5 +22,8 @@ func (app *application) routes() http.Handler {
 	mux.Handle("/user/profile/changepassword", http.HandlerFunc(app.changePassword))
 	mux.Handle("/post/edit/", http.HandlerFunc(app.EditPost))
 	mux.Handle("/post/delete/", http.HandlerFunc(app.DeletePost))
+	// Маршруты для комментариев
+	mux.Handle("/comments/add", app.requireAuthentication(http.HandlerFunc(app.addComment)))
+	mux.Handle("/comments/delete", app.requireAuthentication(http.HandlerFunc(app.deleteComment)))
 	return app.recoverPanic(app.logRequest(secureHeaders(mux)))
 }

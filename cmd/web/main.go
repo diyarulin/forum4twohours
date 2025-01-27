@@ -5,13 +5,14 @@ import (
 	"database/sql"
 	"flag"
 	"forum/internal/models"
-	_ "github.com/mattn/go-sqlite3"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"sync"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type application struct {
@@ -19,6 +20,7 @@ type application struct {
 	infoLog       *log.Logger
 	posts         *models.PostModel
 	users         *models.UserModel
+	comments      *models.CommentModel
 	templateCache map[string]*template.Template
 	sessions      map[string]int
 	mu            sync.Mutex
@@ -53,6 +55,7 @@ func main() {
 		infoLog:       infoLog,
 		posts:         &models.PostModel{DB: db},
 		users:         &models.UserModel{DB: db},
+		comments:      &models.CommentModel{DB: db},
 		templateCache: templateCache,
 		sessions:      make(map[string]int),
 	}
