@@ -728,7 +728,7 @@ func (app *application) deleteComment(w http.ResponseWriter, r *http.Request) {
 
 	err := r.ParseForm()
 	if err != nil {
-		http.Error(w, "invalid form data", http.StatusBadRequest)
+		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 
@@ -736,13 +736,15 @@ func (app *application) deleteComment(w http.ResponseWriter, r *http.Request) {
 	postIDStr := r.Form.Get("post_id")
 
 	if commentIDStr == "" || postIDStr == "" {
-		http.Error(w, "comment_id and post_id are required", http.StatusBadRequest)
+		app.errorLog.Print("DELETE COMMENT: comment_id and post_id are required")
+		app.errorLog.Println(w, http.StatusBadRequest)
 		return
 	}
 
 	commentID, err := strconv.Atoi(commentIDStr)
 	if err != nil {
-		http.Error(w, "invalid comment_id", http.StatusBadRequest)
+		app.errorLog.Print("DELETE COMMENT: invalid comment_id")
+		app.errorLog.Println(w, http.StatusBadRequest)
 		return
 	}
 
@@ -754,7 +756,12 @@ func (app *application) deleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Перенаправляем на страницу поста
-	postID, _ := strconv.Atoi(postIDStr)
+	postID, err := strconv.Atoi(postIDStr)
+	if err != nil {
+		app.errorLog.Print("DELETE COMMENT: invalid post_id")
+		app.errorLog.Println(w, http.StatusBadRequest)
+		return
+	}
 	app.flash(w, r, "Comment deleted successfully!")
 	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", postID), http.StatusSeeOther)
 }
