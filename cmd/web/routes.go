@@ -25,5 +25,10 @@ func (app *application) routes() http.Handler {
 	// Маршруты для комментариев
 	mux.Handle("/comments/add", app.requireAuthentication(http.HandlerFunc(app.addComment)))
 	mux.Handle("/comments/delete", app.requireAuthentication(http.HandlerFunc(app.deleteComment)))
+
+	mux.Handle("/user/googlecallback", http.HandlerFunc(app.googleCallbackHandler))
+	mux.Handle("/user/login/google", http.HandlerFunc(app.googleLogin))
+	mux.Handle("/user/githubcallback", http.HandlerFunc(app.githubCallbackHandler))
+	mux.Handle("/user/login/github", http.HandlerFunc(app.githubLogin))
 	return app.recoverPanic(app.logRequest(secureHeaders(mux)))
 }

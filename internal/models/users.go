@@ -17,8 +17,11 @@ type User struct {
 	Name           string
 	Email          string
 	HashedPassword string
+	Provider       string
+	ProviderID     string
 	Created        time.Time
 }
+
 
 type UserModel struct {
 	DB *sql.DB
@@ -112,4 +115,55 @@ func (m *UserModel) UpdatePassword(hashedPassword string, id int) error {
 		return err
 	}
 	return nil
+}
+
+
+func (m *UserModel) GetOrCreateOAuthUser(email, name, provider, providerID string) (int, error) {
+	var id int
+
+	// Проверяем, существует ли пользователь с таким email
+	query := `SELECT id FROM users WHERE email = ?`
+	err := m.DB.QueryRow(query, email).Scan(&id)
+
+	if err == sql.ErrNoRows {
+		// Если пользователь с таким email не найден, создаём нового пользователя
+		stmt := `INSERT INTO users (name, email, provider, provider_id, hashed_password, created) 
+		         VALUES (?, ?, ?, ?, "", CURRENT_TIMESTAMP)`
+		result, err := m.DB.Exec(stmt, name, email, provider, providerID)
+		if err != nil {
+			return 0, err
+		}
+
+		userID, err := result.LastInsertId()
+		if err != nil {
+			return 0, err
+		}
+
+		id = int(userID)
+	} else if err != nil {
+		return 0, err
+	} else {
+		// Если пользователь с таким email уже существует, проверяем provider и provider_id
+		// Если они уже связаны, возвращаем существующий id
+		var existingProvider string
+		var existingProviderID string
+		query := `SELECT provider, provider_id FROM users WHERE id = ?`
+		err := m.DB.QueryRow(query, id).Scan(&existingProvider, &existingProviderID)
+		if err != nil {
+			return 0, err
+		}
+
+		// Если аккаунт уже ассоциирован с данным провайдером, возвращаем его
+		if existingProvider == provider && existingProviderID == providerID {
+			return id, nil
+		}
+
+		// Если провайдер или ID провайдера изменился, обновляем их
+		_, err = m.DB.Exec(`UPDATE users SET provider = ?, provider_id = ? WHERE id = ?`, provider, providerID, id)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return id, nil
 }
