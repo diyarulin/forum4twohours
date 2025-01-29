@@ -26,14 +26,14 @@ type PostModel struct {
 }
 
 // Insert добавляет новый пост в базу данных
-func (m *PostModel) Insert(title, content, imagePath, category, author string) (int, error) {
+func (m *PostModel) Insert(title, content, imagePath, category, author string, author_id int) (int, error) {
 	// Категория и автор могут быть заданы по умолчанию
 	// defaultCategory := "Uncategorized"
 	// defaultAuthor := "Anonymous"
-	stmt := `INSERT INTO posts (title, content, image_path, category, author, created) 
-	         VALUES (?, ?, ?, ?, ?, DATETIME('now', 'localtime'))`
+	stmt := `INSERT INTO posts (title, content, image_path, category, author, author_id, created) 
+	         VALUES (?, ?, ?, ?, ?, ?,  DATETIME('now', 'localtime'))`
 
-	result, err := m.DB.Exec(stmt, title, content, imagePath, category, author)
+	result, err := m.DB.Exec(stmt, title, content, imagePath, category, author, author_id)
 	if err != nil {
 		return 0, err
 	}
@@ -48,12 +48,12 @@ func (m *PostModel) Insert(title, content, imagePath, category, author string) (
 
 // Get возвращает пост по ID
 func (m *PostModel) Get(id int) (*Post, error) {
-	stmt := `SELECT id, title, content, image_path, category, likes, dislikes, author, created FROM posts WHERE id = ?`
+	stmt := `SELECT id, title, content, image_path, category, likes, dislikes, author, author_id, created FROM posts WHERE id = ?`
 
 	row := m.DB.QueryRow(stmt, id)
 
 	p := &Post{}
-	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.ImagePath, &p.Category, &p.Likes, &p.Dislikes, &p.Author, &p.Created)
+	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.ImagePath, &p.Category, &p.Likes, &p.Dislikes, &p.Author, &p.AuthorID, &p.Created)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNoRecord
@@ -66,7 +66,7 @@ func (m *PostModel) Get(id int) (*Post, error) {
 
 // Latest возвращает 10 последних постов
 func (m *PostModel) Latest() ([]*Post, error) {
-	stmt := `SELECT id, title, content, image_path,  category, author, created FROM posts ORDER BY created DESC LIMIT 10`
+	stmt := `SELECT id, title, content, image_path,  category, author, author_id, created FROM posts ORDER BY created DESC LIMIT 10`
 
 	rows, err := m.DB.Query(stmt)
 	if err != nil {
@@ -78,7 +78,7 @@ func (m *PostModel) Latest() ([]*Post, error) {
 
 	for rows.Next() {
 		p := &Post{}
-		err = rows.Scan(&p.ID, &p.Title, &p.Content, &p.ImagePath, &p.Category, &p.Author, &p.Created)
+		err = rows.Scan(&p.ID, &p.Title, &p.Content, &p.ImagePath, &p.Category, &p.Author, &p.AuthorID, &p.Created)
 		if err != nil {
 			return nil, err
 		}
@@ -117,11 +117,11 @@ func (m *PostModel) UserPosts(userId int) ([]*Post, error) {
 
 	return posts, nil
 }
-func (m *PostModel) UpdatePost(title, content, imagePath, category, author, author_id, id string) error {
+func (m *PostModel) UpdatePost(title, content, imagePath, category, author string, author_id, id int) error {
 	// Категория и автор могут быть заданы по умолчанию
 	// defaultCategory := "Uncategorized"
 	// defaultAuthor := "Anonymous"
-	stmt := `UPDATE posts SET title = ?, content = ?, image_path = ?, category = ?, author = ?, author_id WHERE id = ?`
+	stmt := `UPDATE posts SET title = ?, content = ?, image_path = ?, category = ?, author = ?, author_id = ? WHERE id = ?`
 
 	_, err := m.DB.Exec(stmt, title, content, imagePath, category, author, author_id, id)
 	if err != nil {

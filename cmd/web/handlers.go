@@ -21,15 +21,17 @@ type postCreateForm struct {
 	ImagePath string
 	Category  string
 	Author    string
+	AuthorID  int
 	validator.Validator
 }
 type editPost struct {
-	ID        string
+	ID        int
 	Title     string
 	Content   string
 	ImagePath string
 	Category  string
 	Author    string
+	AuthorID  int
 	validator.Validator
 }
 type userSignupForm struct {
@@ -209,6 +211,7 @@ func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
 			ImagePath: filePath,
 			Category:  r.PostForm.Get("Category"),
 			Author:    author.Name,
+			AuthorID:  author.ID,
 		}
 		form.ImagePath = strings.TrimPrefix(form.ImagePath, "ui/static/upload/")
 
@@ -224,7 +227,7 @@ func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Вставляем данные в базу
-		id, err = app.posts.Insert(form.Title, form.Content, form.ImagePath, form.Category, form.Author)
+		id, err = app.posts.Insert(form.Title, form.Content, form.ImagePath, form.Category, form.Author, form.AuthorID)
 		if err != nil {
 			app.serverError(w, err)
 			return
@@ -509,12 +512,13 @@ func (app *application) EditPost(w http.ResponseWriter, r *http.Request) {
 
 		data := app.newTemplateData(w, r)
 		data.Form = editPost{
-			ID:        strconv.Itoa(post.ID),
+			ID:        post.ID,
 			Title:     post.Title,
 			Content:   post.Content,
 			ImagePath: post.ImagePath,
 			Category:  post.Category,
 			Author:    post.Author,
+			AuthorID:  post.AuthorID,
 		}
 
 		app.render(w, http.StatusOK, "edit_post.html", data)
@@ -572,14 +576,20 @@ func (app *application) EditPost(w http.ResponseWriter, r *http.Request) {
 			app.serverError(w, err)
 			return
 		}
-
+		strID := r.PostForm.Get("id")
+		intID, err := strconv.Atoi(strID)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
 		form := editPost{
-			ID:        r.PostForm.Get("id"),
+			ID:        intID,
 			Title:     r.PostForm.Get("title"),
 			Content:   r.PostForm.Get("content"),
 			ImagePath: filePath, // Путь к изображению только если файл был загружен
 			Category:  r.PostForm.Get("category"),
 			Author:    author.Name,
+			AuthorID:  author.ID,
 		}
 
 		form.ImagePath = strings.TrimPrefix(form.ImagePath, "ui/static/upload/")
@@ -595,17 +605,13 @@ func (app *application) EditPost(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Получаем текущий пост
-		strID, err := strconv.Atoi(form.ID)
+
+		post, err := app.posts.Get(form.ID)
 		if err != nil {
 			app.serverError(w, err)
 			return
 		}
-		post, err := app.posts.Get(strID)
-		if err != nil {
-			app.serverError(w, err)
-			return
-		}
-		if post.Author != form.Author {
+		if post.AuthorID != form.AuthorID {
 			app.clientError(w, http.StatusForbidden)
 			return
 		}
@@ -613,13 +619,13 @@ func (app *application) EditPost(w http.ResponseWriter, r *http.Request) {
 			form.ImagePath = post.ImagePath
 		}
 		app.infoLog.Printf("Updating post: title=%s, content=%s, imagePath=%s, category=%s, author=%s", form.Title, form.Content, form.ImagePath, form.Category, form.Author)
-		err = app.posts.UpdatePost(form.Title, form.Content, form.ImagePath, form.Category, form.Author, form.ID)
+		err = app.posts.UpdatePost(form.Title, form.Content, form.ImagePath, form.Category, form.Author, form.AuthorID, form.ID)
 		if err != nil {
 			app.serverError(w, err)
 		}
 		app.flash(w, r, "Post edited successfully!")
 		// Перенаправляем на страницу профиля
-		http.Redirect(w, r, fmt.Sprintf("/post/view/%s", form.ID), http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("/post/view/%d", form.ID), http.StatusSeeOther)
 		return
 	}
 
@@ -957,9 +963,13 @@ func (app *application) likeComment(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-
+	comment, err := app.comments.GetByID(commentID)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
 	app.flash(w, r, "Comment liked successfully!")
-	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", commentID), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", comment.PostID), http.StatusSeeOther)
 }
 
 func (app *application) dislikeComment(w http.ResponseWriter, r *http.Request) {
@@ -991,9 +1001,13 @@ func (app *application) dislikeComment(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-
+	comment, err := app.comments.GetByID(commentID)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
 	app.flash(w, r, "Comment disliked successfully!")
-	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", commentID), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", comment.PostID), http.StatusSeeOther)
 }
 
 func (app *application) removeLikeComment(w http.ResponseWriter, r *http.Request) {
@@ -1025,9 +1039,13 @@ func (app *application) removeLikeComment(w http.ResponseWriter, r *http.Request
 		app.serverError(w, err)
 		return
 	}
-
+	comment, err := app.comments.GetByID(commentID)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
 	app.flash(w, r, "Like removed successfully!")
-	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", commentID), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", comment.PostID), http.StatusSeeOther)
 }
 
 func (app *application) removeDislikeComment(w http.ResponseWriter, r *http.Request) {
@@ -1059,7 +1077,11 @@ func (app *application) removeDislikeComment(w http.ResponseWriter, r *http.Requ
 		app.serverError(w, err)
 		return
 	}
-
+	comment, err := app.comments.GetByID(commentID)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
 	app.flash(w, r, "Dislike removed successfully!")
-	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", commentID), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", comment.PostID), http.StatusSeeOther)
 }
