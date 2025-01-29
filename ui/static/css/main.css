@@ -351,3 +351,39 @@ footer {
 .notification:last-child {
     border-bottom: none;
 }
+.error-container {
+    max-width: 600px;
+    margin: 100px auto;
+    padding: 40px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    text-align: center;
+}
+.error-code {
+    font-size: 48px;
+    color: #dc3545;
+    margin-bottom: 20px;
+}
+.error-message {
+    font-size: 24px;
+    margin-bottom: 30px;
+    color: #343a40;
+}
+.home-button {
+    background-color: #62CB31;
+    border-radius: 3px;
+    color: #FFFFFF;
+    padding: 18px 27px;
+    border: none;
+    display: inline-block;
+    margin-top: 18px;
+    font-weight: 700;
+    
+}
+.home-button:hover {
+    background-color: #4EB722;
+    color: #FFFFFF;
+    cursor: pointer;
+    text-decoration: none;
+}

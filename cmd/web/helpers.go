@@ -9,15 +9,19 @@ import (
 )
 
 func (app *application) serverError(w http.ResponseWriter, err error) {
-	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
-	app.errorLog.Print(trace)
+	app.errorLog.Printf("%s\n%s", err.Error(), debug.Stack())
 
 	data := &templateData{
 		Status:  http.StatusInternalServerError,
-		Message: "An unexpected error occurred. Please try again later.",
+		Message: "Internal Server Error",
 	}
 
-	app.render(w, http.StatusInternalServerError, "error.html", data)
+	w.WriteHeader(http.StatusInternalServerError)
+	err = app.renderError(w, data)
+	if err != nil {
+		app.errorLog.Println(err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 func (app *application) clientError(w http.ResponseWriter, status int) {
@@ -26,7 +30,20 @@ func (app *application) clientError(w http.ResponseWriter, status int) {
 		Message: http.StatusText(status),
 	}
 
-	app.render(w, status, "error.html", data)
+	w.WriteHeader(status)
+	err := app.renderError(w, data)
+	if err != nil {
+		app.serverError(w, err)
+	}
+}
+
+func (app *application) renderError(w http.ResponseWriter, data *templateData) error {
+	ts, ok := app.templateCache["errors.html"]
+	if !ok {
+		return fmt.Errorf("error template not found")
+	}
+
+	return ts.ExecuteTemplate(w, "main", data)
 }
 
 func (app *application) notFound(w http.ResponseWriter) {
@@ -42,20 +59,10 @@ func (app *application) render(w http.ResponseWriter, status int, page string, d
 	}
 
 	buf := new(bytes.Buffer)
-
-	// Если это страница ошибки, используем шаблон без навигации
-	if status >= 400 {
-		err := ts.ExecuteTemplate(buf, "main", data)
-		if err != nil {
-			app.serverError(w, err)
-			return
-		}
-	} else {
-		err := ts.ExecuteTemplate(buf, "base", data)
-		if err != nil {
-			app.serverError(w, err)
-			return
-		}
+	err := ts.ExecuteTemplate(buf, "base", data)
+	if err != nil {
+		app.serverError(w, err)
+		return
 	}
 
 	w.WriteHeader(status)
