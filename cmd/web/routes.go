@@ -39,15 +39,13 @@ func (app *application) routes() http.Handler {
 	mux.Handle("/user/login/google", http.HandlerFunc(app.googleLogin))
 	mux.Handle("/user/githubcallback", http.HandlerFunc(app.githubCallbackHandler))
 	mux.Handle("/user/login/github", http.HandlerFunc(app.githubLogin))
-	// Moderator routes
-	// mux.Handle("/post/approve", app.requireRole("moderator", http.HandlerFunc(app.approvePost)))
-	// mux.Handle("/post/delete", app.requireRole("moderator", http.HandlerFunc(app.deletePost)))
-	// mux.Handle("/post/report", app.requireRole("moderator", http.HandlerFunc(app.reportPost)))
-	// // Admin routes
-	// mux.Handle("/user/promote", app.requireRole("admin", http.HandlerFunc(app.promoteUser)))
-	// mux.Handle("/user/demote", app.requireRole("admin", http.HandlerFunc(app.demoteUser)))
-	// mux.Handle("/categories/manage", app.requireRole("admin", http.HandlerFunc(app.manageCategories)))
-	// mux.Handle("/report/handle", app.requireRole("admin", http.HandlerFunc(app.handleReport)))
+
+	mux.Handle("/moderation", app.requireAuthentication(app.requireRole("moderator", http.HandlerFunc(app.moderationPanel))))
+	mux.Handle("/post/approve", app.requireRole("moderator", http.HandlerFunc(app.approvePost)))
+
+	// Admin routes
+	mux.Handle("/user/promote", app.requireRole("admin", http.HandlerFunc(app.promoteUser)))
+	mux.Handle("/user/demote", app.requireRole("admin", http.HandlerFunc(app.demoteUser)))
 
 	return app.recoverPanic(app.logRequest(secureHeaders(mux)))
 }

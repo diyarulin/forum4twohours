@@ -660,57 +660,57 @@ func (app *application) EditPost(w http.ResponseWriter, r *http.Request) {
 
 }
 func (app *application) DeletePost(w http.ResponseWriter, r *http.Request) {
-	idParam := r.URL.Query().Get("id")
-	var id int
-	var err error
-
-	if idParam != "" {
-		// Если параметр есть, преобразуем его в число
-		id, err = strconv.Atoi(idParam)
-	} else {
-		// Иначе пытаемся извлечь ID из пути
-		path := strings.TrimPrefix(r.URL.Path, "/post/delete/")
-		id, err = strconv.Atoi(path)
-	}
-
-	post, err := app.posts.Get(id)
+	// Получаем ID поста из URL
+	id, err := strconv.Atoi(strings.TrimPrefix(r.URL.Path, "/post/delete/"))
 	if err != nil {
-		if errors.Is(err, models.ErrNoRecord) {
-			app.notFound(w)
-		} else {
-			app.serverError(w, err)
-		}
+		app.clientError(w, http.StatusBadRequest)
 		return
 	}
-	// Получаем информацию о текущем пользователе из сессии
+
+	// Получаем текущего пользователя
 	userID, err := app.getCurrentUser(r)
 	if err != nil {
-		http.Redirect(w, r, "/", http.StatusFound)
+		app.clientError(w, http.StatusUnauthorized)
 		return
 	}
-	author, err := app.users.Get(userID)
+
+	// Проверяем права доступа
+	post, err := app.posts.Get(id)
+	if err != nil {
+		app.notFound(w)
+		return
+	}
+
+	user, err := app.users.Get(userID)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-	if post.Author != author.Name {
+
+	// Разрешаем удаление если:
+	// 1. Пользователь - автор поста
+	// 2. Пользователь модератор или админ
+	if post.AuthorID != userID && user.Role != "moderator" && user.Role != "admin" {
 		app.clientError(w, http.StatusForbidden)
 		return
 	}
 
+	// Логика удаления поста
 	path, err := app.posts.DeletePost(id)
 	if err != nil {
 		app.serverError(w, err)
+		return
 	}
+
+	// Удаление файла если есть
 	if path != "" {
-		err = os.Remove("./ui/static/upload/" + path)
-		if err != nil {
-			app.serverError(w, err)
-			return
+		if err := os.Remove("./ui/static/upload/" + path); err != nil {
+			app.errorLog.Println("Failed to delete image:", err)
 		}
 	}
+
 	app.flash(w, r, "Post deleted successfully!")
-	http.Redirect(w, r, "/user/profile/", http.StatusSeeOther)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 func (app *application) getComments(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {

@@ -72,15 +72,11 @@ func (app *application) requireRole(role string, next http.Handler) http.Handler
 		}
 
 		user, err := app.users.Get(userID)
-		if err != nil {
+		if err != nil || user.Role != role {
 			app.clientError(w, http.StatusForbidden)
 			return
 		}
 
-		if user.Role != role {
-			app.clientError(w, http.StatusForbidden)
-			return
-		}
 		next.ServeHTTP(w, r)
 	})
 }

@@ -180,7 +180,10 @@ func (m *PostModel) SortByCategory(category string) ([]*Post, error) {
 }
 
 func (m *PostModel) GetPendingPosts() ([]*Post, error) {
-	stmt := `SELECT id, title, content, author, created FROM posts WHERE status = 'pending'`
+	stmt := `SELECT id, title, content, author, created 
+             FROM posts 
+             WHERE status = 'pending' 
+             ORDER BY created DESC`
 
 	rows, err := m.DB.Query(stmt)
 	if err != nil {
@@ -203,4 +206,9 @@ func (m *PostModel) GetPendingPosts() ([]*Post, error) {
 	}
 
 	return posts, nil
+}
+
+func (m *PostModel) ApprovePost(postID int) error {
+	_, err := m.DB.Exec("UPDATE posts SET status = 'approved' WHERE id = ?", postID)
+	return err
 }

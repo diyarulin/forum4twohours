@@ -1,82 +1,45 @@
-{{define "title"}}Moderation Panel{{end}}
-
+{{define "title"}}User Profile{{end}}
 {{define "main"}}
-<h2>Moderation Panel</h2>
 
-{{if eq .User.Role "moderator"}}
-<h3>Pending Posts</h3>
-{{if .PendingPosts}}
-<table>
-    <tr>
-        <th>ID</th>
-        <th>Title</th>
-        <th>Author</th>
-        <th>Created</th>
-        <th>Actions</th>
-    </tr>
-    {{range .PendingPosts}}
-    <tr>
-        <td>#{{.ID}}</td>
-        <td>{{.Title}}</td>
-        <td>{{.Author}}</td>
-        <td>{{humanDate .Created}}</td>
-        <td>
-            <form action="/post/approve" method="POST" style="display: inline;">
+
+<main class="container">
+    <h2>Moderation Panel</h2>
+
+    {{if eq .User.Role "moderator"}}
+    <section class="pending-posts">
+        <h3>Posts Pending Approval</h3>
+        {{range .PendingPosts}}
+        <div class="post">
+            <h4>{{.Title}}</h4>
+            <p>{{.Content}}</p>
+            <p>Author: {{.Author}}</p>
+            <form action="/post/approve" method="POST">
                 <input type="hidden" name="post_id" value="{{.ID}}">
                 <button type="submit">Approve</button>
             </form>
-            <form action="/post/delete" method="POST" style="display: inline;">
-                <input type="hidden" name="post_id" value="{{.ID}}">
-                <button type="submit">Delete</button>
+            <a href="/post/delete/{{.ID}}" class="button danger">Delete</a>
+        </div>
+        {{else}}
+        <p>No posts pending approval</p>
+        {{end}}
+    </section>
+
+    <section class="user-management">
+        <h3>User Management</h3>
+        {{range .Users}}
+        <div class="user">
+            <p>{{.Name}} ({{.Email}}) - {{.Role}}</p>
+            <form action="/user/promote" method="POST">
+                <input type="hidden" name="user_id" value="{{.ID}}">
+                <button type="submit" {{if eq .Role "moderator"}}disabled{{end}}>Promote to Moderator</button>
             </form>
-        </td>
-    </tr>
-    {{end}}
-</table>
-{{else}}
-<p>No pending posts.</p>
-{{end}}
-{{end}}
-
-{{if eq .User.Role "admin"}}
-<h3>User Management</h3>
-<form action="/user/promote" method="POST">
-    <label>User ID:</label>
-    <input type="text" name="user_id" required>
-    <button type="submit">Promote to Moderator</button>
-</form>
-
-<form action="/user/demote" method="POST">
-    <label>User ID:</label>
-    <input type="text" name="user_id" required>
-    <button type="submit">Demote from Moderator</button>
-</form>
-
-<h3>Reports</h3>
-{{if .Reports}}
-<table>
-    <tr>
-        <th>ID</th>
-        <th>Post ID</th>
-        <th>Reported By</th>
-        <th>Actions</th>
-    </tr>
-    {{range .Reports}}
-    <tr>
-        <td>#{{.ID}}</td>
-        <td>{{.PostID}}</td>
-        <td>{{.ReportedBy}}</td>
-        <td>
-            <form action="/report/handle" method="POST" style="display: inline;">
-                <input type="hidden" name="report_id" value="{{.ID}}">
-                <button type="submit">Handle</button>
+            <form action="/user/demote" method="POST">
+                <input type="hidden" name="user_id" value="{{.ID}}">
+                <button type="submit" {{if eq .Role "user"}}disabled{{end}}>Demote to User</button>
             </form>
-        </td>
-    </tr>
+        </div>
+        {{end}}
+    </section>
     {{end}}
-</table>
-{{else}}
-<p>No reports.</p>
-{{end}}
-{{end}}
+</main>
 {{end}}

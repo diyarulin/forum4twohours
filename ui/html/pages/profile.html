@@ -2,8 +2,8 @@
 {{define "main"}}
 <main>
     {{if or (eq .User.Role "moderator") (eq .User.Role "admin")}}
-    <div>
-        <a href="/moderation">Moderation Panel</a>
+    <div class="moderation-link">
+        <a href="/moderation">🚨 Moderation Panel</a>
     </div>
     {{end}}
   <h1>User Profile</h1>

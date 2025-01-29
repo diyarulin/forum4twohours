@@ -27,7 +27,7 @@ type templateData struct {
 	IsAuthenticated     bool
 	Status              int
 	Message             string
-	PendingPostsCount   int
+	PendingPosts        []*models.Post
 }
 
 func humanDate(t time.Time) string {

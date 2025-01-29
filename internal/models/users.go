@@ -109,6 +109,31 @@ func (m *UserModel) Get(id int) (*User, error) {
 
 	return u, nil
 }
+func (m *UserModel) GetAllUsers() ([]*User, error) {
+	stmt := `SELECT id, name, email, role FROM users`
+	rows, err := m.DB.Query(stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*User
+	for rows.Next() {
+		u := &User{}
+		err = rows.Scan(&u.ID, &u.Name, &u.Email, &u.Role)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 func (m *UserModel) UpdatePassword(hashedPassword string, id int) error {
 	stmt := "UPDATE users SET hashed_password = ? WHERE id = ?"
 	_, err := m.DB.Exec(stmt, hashedPassword, id)
@@ -133,8 +158,8 @@ func (m *UserModel) GetOrCreateOAuthUser(email, name, provider, provider_id stri
 
 	// Если пользователя нет, создаем нового
 	result, err := m.DB.Exec(`
-        INSERT INTO users (name, email, provider, provider_id, role, created) 
-        VALUES (?, ?, ?, ?, 'user', DATETIME('now'))
+        INSERT INTO users (name, email, provider, provider_id, role, created, hashed_password) 
+        VALUES (?, ?, ?, ?, 'user', DATETIME('now'), 'google')
     `, name, email, provider, provider_id)
 
 	if err != nil {
@@ -145,10 +170,12 @@ func (m *UserModel) GetOrCreateOAuthUser(email, name, provider, provider_id stri
 	return int(id), nil
 }
 
-func (m *UserModel) PromoteUser(id int) error {
-	return nil
+func (m *UserModel) PromoteUser(userID int) error {
+	_, err := m.DB.Exec("UPDATE users SET role = 'moderator' WHERE id = ?", userID)
+	return err
 }
 
-func (m *UserModel) DemoteUser(id int) error {
-	return nil
+func (m *UserModel) DemoteUser(userID int) error {
+	_, err := m.DB.Exec("UPDATE users SET role = 'user' WHERE id = ?", userID)
+	return err
 }

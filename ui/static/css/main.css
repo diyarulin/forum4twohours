@@ -387,3 +387,39 @@ footer {
     cursor: pointer;
     text-decoration: none;
 }
+
+.pending-posts .post {
+    border: 1px solid #ccc;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 5px;
+}
+
+.user-management .user {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.button.danger {
+    background-color: #dc3545;
+    color: white;
+}
+.moderation-link {
+    margin: 1rem 0;
+    padding: 1rem;
+    background-color: #fff3cd;
+    border-radius: 5px;
+}
+
+.moderation-link a {
+    color: #856404;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.moderation-link a:hover {
+    text-decoration: underline;
+}
