@@ -20,8 +20,8 @@ type User struct {
 	Provider       string
 	ProviderID     string
 	Created        time.Time
+	Role           string
 }
-
 
 type UserModel struct {
 	DB *sql.DB
@@ -33,8 +33,8 @@ func (m *UserModel) Insert(name, email, password string) error {
 		return err
 	}
 
-	stmt := `INSERT INTO users (name, email, hashed_password, created) 
-	         VALUES (?, ?, ?, DATETIME('now', 'localtime'))`
+	stmt := `INSERT INTO users (name, email, hashed_password, created, role) 
+	         VALUES (?, ?, ?, DATETIME('now', 'localtime'), 'user')`
 
 	_, err = m.DB.Exec(stmt, name, email, string(hashedPassword))
 	if err != nil {
@@ -95,10 +95,10 @@ func hashPassword(password string, salt string) (string, error) {
 }
 
 func (m *UserModel) Get(id int) (*User, error) {
-	stmt := `SELECT name, email, hashed_password, created FROM users WHERE id = ?`
+	stmt := `SELECT name, email, hashed_password, created, role FROM users WHERE id = ?`
 	row := m.DB.QueryRow(stmt, id)
 	u := &User{}
-	err := row.Scan(&u.Name, &u.Email, &u.HashedPassword, &u.Created)
+	err := row.Scan(&u.Name, &u.Email, &u.HashedPassword, &u.Created, &u.Role)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNoRecord
@@ -117,53 +117,37 @@ func (m *UserModel) UpdatePassword(hashedPassword string, id int) error {
 	return nil
 }
 
+func (m *UserModel) GetOrCreateOAuthUser(email, name, provider, provider_id string) (int, error) {
+	var userID int
 
-func (m *UserModel) GetOrCreateOAuthUser(email, name, provider, providerID string) (int, error) {
-	var id int
+	// Проверяем, существует ли пользователь с данным oauth_id и провайдером
+	err := m.DB.QueryRow(`
+        SELECT id FROM users 
+        WHERE provider = ? AND provider_id = ?
+    `, provider, provider_id).Scan(&userID)
 
-	// Проверяем, существует ли пользователь с таким email
-	query := `SELECT id FROM users WHERE email = ?`
-	err := m.DB.QueryRow(query, email).Scan(&id)
-
-	if err == sql.ErrNoRows {
-		// Если пользователь с таким email не найден, создаём нового пользователя
-		stmt := `INSERT INTO users (name, email, provider, provider_id, hashed_password, created) 
-		         VALUES (?, ?, ?, ?, "", CURRENT_TIMESTAMP)`
-		result, err := m.DB.Exec(stmt, name, email, provider, providerID)
-		if err != nil {
-			return 0, err
-		}
-
-		userID, err := result.LastInsertId()
-		if err != nil {
-			return 0, err
-		}
-
-		id = int(userID)
-	} else if err != nil {
-		return 0, err
-	} else {
-		// Если пользователь с таким email уже существует, проверяем provider и provider_id
-		// Если они уже связаны, возвращаем существующий id
-		var existingProvider string
-		var existingProviderID string
-		query := `SELECT provider, provider_id FROM users WHERE id = ?`
-		err := m.DB.QueryRow(query, id).Scan(&existingProvider, &existingProviderID)
-		if err != nil {
-			return 0, err
-		}
-
-		// Если аккаунт уже ассоциирован с данным провайдером, возвращаем его
-		if existingProvider == provider && existingProviderID == providerID {
-			return id, nil
-		}
-
-		// Если провайдер или ID провайдера изменился, обновляем их
-		_, err = m.DB.Exec(`UPDATE users SET provider = ?, provider_id = ? WHERE id = ?`, provider, providerID, id)
-		if err != nil {
-			return 0, err
-		}
+	if err == nil {
+		return userID, nil // Пользователь существует
 	}
 
-	return id, nil
+	// Если пользователя нет, создаем нового
+	result, err := m.DB.Exec(`
+        INSERT INTO users (name, email, provider, provider_id, role, created) 
+        VALUES (?, ?, ?, ?, 'user', DATETIME('now'))
+    `, name, email, provider, provider_id)
+
+	if err != nil {
+		return 0, err
+	}
+
+	id, _ := result.LastInsertId()
+	return int(id), nil
+}
+
+func (m *UserModel) PromoteUser(id int) error {
+	return nil
+}
+
+func (m *UserModel) DemoteUser(id int) error {
+	return nil
 }

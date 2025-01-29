@@ -23,6 +23,7 @@ type postCreateForm struct {
 	Author    string
 	AuthorID  int
 	validator.Validator
+	Status string
 }
 type editPost struct {
 	ID        int
@@ -205,13 +206,20 @@ func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Извлекаем данные из формы
+		var statusString string
+		if author.Role == "moderator" || author.Role == "admin" {
+			statusString = "approved"
+		} else {
+			statusString = "pending"
+		}
 		form := postCreateForm{
 			Title:     r.PostForm.Get("title"),
 			Content:   r.PostForm.Get("content"),
 			ImagePath: filePath,
 			Category:  r.PostForm.Get("Category"),
 			Author:    author.Name,
-			AuthorID:  author.ID,
+			AuthorID:  id,
+			Status:    statusString,
 		}
 		form.ImagePath = strings.TrimPrefix(form.ImagePath, "ui/static/upload/")
 
@@ -226,8 +234,18 @@ func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		app.infoLog.Printf("User Role: %s, Setting post status to: %s", author.Role, form.Status)
 		// Вставляем данные в базу
-		id, err = app.posts.Insert(form.Title, form.Content, form.ImagePath, form.Category, form.Author, form.AuthorID)
+		id, err = app.posts.Insert(
+			form.Title,
+			form.Content,
+			form.ImagePath,
+			form.Category,
+			form.Author,
+			form.Status,
+			form.AuthorID,
+		)
+
 		if err != nil {
 			app.serverError(w, err)
 			return
@@ -405,7 +423,7 @@ func (app *application) profile(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-	userPosts, err := app.posts.UserPosts(user.ID)
+	userPosts, err := app.posts.UserPosts(id)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -415,7 +433,9 @@ func (app *application) profile(w http.ResponseWriter, r *http.Request) {
 	data.User = &models.User{
 		Name:  user.Name,
 		Email: user.Email,
+		Role:  user.Role,
 	}
+
 	app.render(w, http.StatusOK, "profile.html", data)
 }
 func (app *application) changePassword(w http.ResponseWriter, r *http.Request) {
