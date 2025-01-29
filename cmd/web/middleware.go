@@ -62,3 +62,25 @@ func (app *application) requireAuthentication(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func (app *application) requireRole(role string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID, err := app.getCurrentUser(r)
+		if err != nil {
+			app.clientError(w, http.StatusUnauthorized)
+			return
+		}
+
+		user, err := app.users.Get(userID)
+		if err != nil {
+			app.clientError(w, http.StatusForbidden)
+			return
+		}
+
+		if user.Role != role {
+			app.clientError(w, http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}

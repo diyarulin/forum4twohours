@@ -18,6 +18,7 @@ type Post struct {
 	Author    string
 	AuthorID  int
 	Created   time.Time
+	Status    string
 }
 
 // PostModel обёртка для соединения с базой данных
@@ -26,14 +27,24 @@ type PostModel struct {
 }
 
 // Insert добавляет новый пост в базу данных
-func (m *PostModel) Insert(title, content, imagePath, category, author string, author_id int) (int, error) {
+func (m *PostModel) Insert(title, content, imagePath, category, author, status string, author_id int) (int, error) {
 	// Категория и автор могут быть заданы по умолчанию
 	// defaultCategory := "Uncategorized"
 	// defaultAuthor := "Anonymous"
-	stmt := `INSERT INTO posts (title, content, image_path, category, author, author_id, created) 
-	         VALUES (?, ?, ?, ?, ?, ?,  DATETIME('now', 'localtime'))`
+	stmt := `INSERT INTO posts (title, content, image_path, category, author, author_id, created, status) 
+         VALUES (?, ?, ?, ?, ?, ?, DATETIME('now', 'localtime'), ?)` // 8 параметров!
 
-	result, err := m.DB.Exec(stmt, title, content, imagePath, category, author, author_id)
+	result, err := m.DB.Exec(
+		stmt,
+		title,     // 1
+		content,   // 2
+		imagePath, // 3
+		category,  // 4
+		author,    // 5
+		author_id, // 6
+		status,    // 8 (последний параметр)
+	)
+
 	if err != nil {
 		return 0, err
 	}
@@ -48,12 +59,12 @@ func (m *PostModel) Insert(title, content, imagePath, category, author string, a
 
 // Get возвращает пост по ID
 func (m *PostModel) Get(id int) (*Post, error) {
-	stmt := `SELECT id, title, content, image_path, category, likes, dislikes, author, author_id, created FROM posts WHERE id = ?`
+	stmt := `SELECT id, title, content, image_path, category, likes, dislikes, author, author_id, created, status FROM posts WHERE id = ?`
 
 	row := m.DB.QueryRow(stmt, id)
 
 	p := &Post{}
-	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.ImagePath, &p.Category, &p.Likes, &p.Dislikes, &p.Author, &p.AuthorID, &p.Created)
+	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.ImagePath, &p.Category, &p.Likes, &p.Dislikes, &p.Author, &p.AuthorID, &p.Created, &p.Status)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNoRecord
@@ -159,6 +170,32 @@ func (m *PostModel) SortByCategory(category string) ([]*Post, error) {
 			return nil, err
 		}
 		posts = append(posts, post)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return posts, nil
+}
+
+func (m *PostModel) GetPendingPosts() ([]*Post, error) {
+	stmt := `SELECT id, title, content, author, created FROM posts WHERE status = 'pending'`
+
+	rows, err := m.DB.Query(stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []*Post
+	for rows.Next() {
+		p := &Post{}
+		err = rows.Scan(&p.ID, &p.Title, &p.Content, &p.Author, &p.Created)
+		if err != nil {
+			return nil, err
+		}
+		posts = append(posts, p)
 	}
 
 	if err = rows.Err(); err != nil {

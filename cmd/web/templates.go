@@ -26,6 +26,7 @@ type templateData struct {
 	IsAuthenticated     bool
 	Status              int
 	Message             string
+	PendingPostsCount   int
 }
 
 func humanDate(t time.Time) string {
