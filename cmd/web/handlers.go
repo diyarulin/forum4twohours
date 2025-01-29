@@ -756,7 +756,20 @@ func (app *application) addComment(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-
+	post, err := app.posts.Get(comment.PostID)
+	if err == nil && post.AuthorID != comment.UserID {
+		// Создаем уведомление для автора поста
+		err = app.notificationsModel.Insert(
+			post.AuthorID,
+			comment.UserID,
+			"comment",
+			post.ID,
+			comment.ID,
+		)
+		if err != nil {
+			app.errorLog.Println("Failed to create notification:", err)
+		}
+	}
 	// Перенаправляем на страницу поста с комментариями
 	app.flash(w, r, "Comment added successfully!")
 	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", id), http.StatusSeeOther)
@@ -837,6 +850,19 @@ func (app *application) likePost(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
+	post, err := app.posts.Get(postID)
+	if err == nil && post.AuthorID != userID {
+		err = app.notificationsModel.Insert(
+			post.AuthorID,
+			userID,
+			"post_like",
+			postID,
+			0,
+		)
+		if err != nil {
+			app.errorLog.Println("Failed to create notification:", err)
+		}
+	}
 
 	app.flash(w, r, "Post liked successfully!")
 	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", postID), http.StatusSeeOther)
@@ -871,7 +897,19 @@ func (app *application) dislikePost(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-
+	post, err := app.posts.Get(postID)
+	if err == nil && post.AuthorID != userID {
+		err = app.notificationsModel.Insert(
+			post.AuthorID,
+			userID,
+			"post_dislike",
+			postID,
+			0,
+		)
+		if err != nil {
+			app.errorLog.Println("Failed to create notification:", err)
+		}
+	}
 	app.flash(w, r, "Post disliked successfully!")
 	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", postID), http.StatusSeeOther)
 }
@@ -977,6 +1015,20 @@ func (app *application) likeComment(w http.ResponseWriter, r *http.Request) {
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
+	post, err := app.posts.Get(comment.PostID)
+	if err == nil && post.AuthorID != comment.UserID {
+		// Создаем уведомление для автора поста
+		err = app.notificationsModel.Insert(
+			post.AuthorID,
+			comment.UserID,
+			"comment_like",
+			post.ID,
+			comment.ID,
+		)
+		if err != nil {
+			app.errorLog.Println("Failed to create notification:", err)
+		}
+	}
 	app.flash(w, r, "Comment liked successfully!")
 	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", comment.PostID), http.StatusSeeOther)
 }
@@ -1014,6 +1066,20 @@ func (app *application) dislikeComment(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
+	}
+	post, err := app.posts.Get(comment.PostID)
+	if err == nil && post.AuthorID != comment.UserID {
+		// Создаем уведомление для автора поста
+		err = app.notificationsModel.Insert(
+			post.AuthorID,
+			comment.UserID,
+			"comment_dislike",
+			post.ID,
+			comment.ID,
+		)
+		if err != nil {
+			app.errorLog.Println("Failed to create notification:", err)
+		}
 	}
 	app.flash(w, r, "Comment disliked successfully!")
 	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", comment.PostID), http.StatusSeeOther)
@@ -1093,4 +1159,35 @@ func (app *application) removeDislikeComment(w http.ResponseWriter, r *http.Requ
 	}
 	app.flash(w, r, "Dislike removed successfully!")
 	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", comment.PostID), http.StatusSeeOther)
+}
+func (app *application) notifications(w http.ResponseWriter, r *http.Request) {
+
+	if !app.isAuthenticated(r) {
+		http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+		return
+	}
+
+	userID, err := app.getCurrentUser(r)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// Получаем уведомления
+	notifications, err := app.notificationsModel.GetAll(userID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// Помечаем как прочитанные
+	err = app.notificationsModel.MarkAllAsRead(userID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	data := app.newTemplateData(w, r)
+	data.Notifications = notifications
+	app.render(w, http.StatusOK, "notifications.html", data)
 }

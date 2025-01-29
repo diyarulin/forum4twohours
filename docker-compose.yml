@@ -1,0 +1,14 @@
+
+
+services:
+  forum:
+    build: .
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./data:/data
+      - ./tls:/app/tls
+      - ./ui/static/upload:/app/ui/static/upload
+    environment:
+      - GIN_MODE=release
+    restart: unless-stopped

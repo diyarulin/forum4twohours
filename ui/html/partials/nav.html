@@ -6,14 +6,20 @@
         <a href='/post/create'>Create post</a>
         {{end}}
     </div>
-    <div>
+    <div class="nav-right">
         {{if .IsAuthenticated}}
+        <div class="notification-badge">
+            <a href="/notifications" class="notification-link">
+                🔔
+                {{if gt .UnreadNotifications 0}}
+                <span class="badge">{{.UnreadNotifications}}</span>
+                {{end}}
+            </a>
+        </div>
         <form action='/user/logout' method='POST'>
             <button>Logout</button>
         </form>
-        <form action='/user/profile' method='GET'>
-            <button>Profile</button>
-        </form>
+        <a href='/user/profile'>Profile</a>
         {{else}}
         <a href='/user/signup'>Signup</a>
         <a href='/user/login'>Login</a>

@@ -16,21 +16,22 @@ import (
 )
 
 type application struct {
-	errorLog      *log.Logger
-	infoLog       *log.Logger
-	posts         *models.PostModel
-	users         *models.UserModel
-	comments      *models.CommentModel
-	reactions     *models.ReactionModel
-	templateCache map[string]*template.Template
-	sessions      map[string]int
-	mu            sync.Mutex
+	errorLog           *log.Logger
+	infoLog            *log.Logger
+	posts              *models.PostModel
+	users              *models.UserModel
+	comments           *models.CommentModel
+	reactions          *models.ReactionModel
+	notificationsModel *models.NotificationModel
+	templateCache      map[string]*template.Template
+	sessions           map[string]int
+	mu                 sync.Mutex
 }
 
 func main() {
 	// Адрес порта
 	addr := flag.String("addr", ":4000", "http service address")
-	dsn := "./forum.db"
+	dsn := "./data/forum.db"
 	flag.Parse()
 
 	// Логгеры для ошибок и информации
@@ -52,14 +53,15 @@ func main() {
 
 	// Инициализация структуры приложения
 	app := application{
-		errorLog:      errorLog,
-		infoLog:       infoLog,
-		posts:         &models.PostModel{DB: db},
-		users:         &models.UserModel{DB: db},
-		comments:      &models.CommentModel{DB: db},
-		reactions:     &models.ReactionModel{DB: db},
-		templateCache: templateCache,
-		sessions:      make(map[string]int),
+		errorLog:           errorLog,
+		infoLog:            infoLog,
+		posts:              &models.PostModel{DB: db},
+		users:              &models.UserModel{DB: db},
+		comments:           &models.CommentModel{DB: db},
+		notificationsModel: &models.NotificationModel{DB: db},
+		reactions:          &models.ReactionModel{DB: db},
+		templateCache:      templateCache,
+		sessions:           make(map[string]int),
 	}
 
 	tlsConfig := &tls.Config{
@@ -84,7 +86,7 @@ func main() {
 }
 
 func openDB(dsn string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", dsn)
+	db, err := sql.Open("sqlite3", dsn+"?_foreign_keys=on&_busy_timeout=5000")
 	if err != nil {
 		return nil, err
 	}

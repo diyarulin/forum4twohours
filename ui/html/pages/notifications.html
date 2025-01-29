@@ -1,0 +1,41 @@
+{{template "base" .}}
+
+{{define "title"}}Notifications{{end}}
+
+{{define "main"}}
+<div class="container">
+    <h2>Your Notifications</h2>
+    {{if .Notifications}}
+    <div class="notification-list">
+        {{range .Notifications}}
+        <div class="notification {{if not .IsRead}}unread{{end}}">
+            {{if eq .Type "post_like"}}
+            <a href="/post/view/{{.PostID}}">
+                {{.ActorName}} liked your post
+            </a>
+            {{else if eq .Type "post_dislike"}}
+            <a href="/post/view/{{.PostID}}">
+                {{.ActorName}} disliked your post
+            </a>
+            {{else if eq .Type "comment"}}
+            <a href="/post/view/{{.PostID}}#comment-{{.CommentID}}">
+                {{.ActorName}} commented on your post
+            </a>
+            {{else if eq .Type "comment_like"}}
+            <a href="/post/view/{{.PostID}}#comment-{{.CommentID}}">
+                {{.ActorName}} liked your comment
+            </a>
+            {{else if eq .Type "comment_dislike"}}
+            <a href="/post/view/{{.PostID}}#comment-{{.CommentID}}">
+                {{.ActorName}} disliked your comment
+            </a>
+            {{end}}
+            <span class="text-muted">{{.Created.Format "Jan 02, 2006 15:04"}}</span>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <p>No notifications to display</p>
+    {{end}}
+</div>
+{{end}}

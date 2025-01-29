@@ -1,0 +1,28 @@
+{{define "title"}}Error {{.Status}}{{end}}
+
+{{define "main"}}
+    <style>
+        .error-container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #f8d7da;
+            color: #721c24;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        .error-container h2 {
+            margin-top: 0;
+        }
+    </style>
+    <div class="error-container">
+        <h2>Error {{.Status}}</h2>
+        <p>{{.Message}}</p>
+        {{if .Flash}}
+        <div class="flash">{{.Flash}}</div>
+        {{end}}
+        <a href='/'>Go to Home</a>
+    </div>
+{{end}}

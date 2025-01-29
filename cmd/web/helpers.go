@@ -8,34 +8,32 @@ import (
 	"time"
 )
 
-// The serverError helper writes an error message and stack trace to the errorLog,
-// then sends a generic 500 Internal Server Error response to the user.
 func (app *application) serverError(w http.ResponseWriter, err error) {
 	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
 	app.errorLog.Print(trace)
 
-	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	data := &templateData{
+		Status:  http.StatusInternalServerError,
+		Message: "An unexpected error occurred. Please try again later.",
+	}
+
+	app.render(w, http.StatusInternalServerError, "error.html", data)
 }
 
-// The clientError helper sends a specific status code and corresponding description
-// to the user. We'll use this later in the book to send responses like 400 "Bad
-// Request" when there's a problem with the request that the user sent.
 func (app *application) clientError(w http.ResponseWriter, status int) {
-	http.Error(w, http.StatusText(status), status)
+	data := &templateData{
+		Status:  status,
+		Message: http.StatusText(status),
+	}
+
+	app.render(w, status, "error.html", data)
 }
 
-// For consistency, we'll also implement a notFound helper. This is simply a
-// convenience wrapper around clientError which sends a 404 Not Found response to
-// the user.
 func (app *application) notFound(w http.ResponseWriter) {
 	app.clientError(w, http.StatusNotFound)
 }
 
 func (app *application) render(w http.ResponseWriter, status int, page string, data *templateData) {
-	// Retrieve the appropriate template set from the cache based on the page
-	// name (like 'home.html'). If no entry exists in the cache with the
-	// provided name, then create a new error and call the serverError() helper
-	// method that we made earlier and return.
 	ts, ok := app.templateCache[page]
 	if !ok {
 		err := fmt.Errorf("the template %s does not exist", page)
@@ -45,19 +43,23 @@ func (app *application) render(w http.ResponseWriter, status int, page string, d
 
 	buf := new(bytes.Buffer)
 
-	err := ts.ExecuteTemplate(buf, "base", data)
-	if err != nil {
-		app.serverError(w, err)
-		return
+	// Если это страница ошибки, используем шаблон без навигации
+	if status >= 400 {
+		err := ts.ExecuteTemplate(buf, "main", data)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+	} else {
+		err := ts.ExecuteTemplate(buf, "base", data)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
 	}
 
-	// Write out the provided HTTP status code ('200 OK', '400 Bad Request'
-	// etc.).
 	w.WriteHeader(status)
-
 	buf.WriteTo(w)
-	// Execute the template set and write the response body. Again, if there
-	// is any error we call the the serverError() helper.
 }
 
 func (app *application) flash(w http.ResponseWriter, r *http.Request, message string) {
@@ -95,12 +97,27 @@ func (app *application) newTemplateData(w http.ResponseWriter, r *http.Request) 
 	if flashMessage != nil {
 		flash = flashMessage.Value // Сохраняем текст сообщения
 	}
-
-	return &templateData{
+	data := &templateData{
 		CurrentYear:     time.Now().Year(),
 		Flash:           flash, // Передаем флеш-сообщение как строку
 		IsAuthenticated: app.isAuthenticated(r),
 	}
+	if app.isAuthenticated(r) {
+		userID, err := app.getCurrentUser(r)
+		if err == nil {
+			// Получаем количество непрочитанных
+			count, _ := app.notificationsModel.GetUnreadCount(userID)
+			data = &templateData{
+				CurrentYear:         time.Now().Year(),
+				Flash:               flash, // Передаем флеш-сообщение как строку
+				IsAuthenticated:     app.isAuthenticated(r),
+				UnreadNotifications: count,
+			}
+
+		}
+	}
+
+	return data
 }
 
 func (app *application) isAuthenticated(r *http.Request) bool {
