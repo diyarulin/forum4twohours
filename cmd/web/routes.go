@@ -33,7 +33,7 @@ func (app *application) routes() http.Handler {
 	mux.Handle("/comment/remove-dislike", app.requireAuthentication(http.HandlerFunc(app.removeDislikeComment)))
 	// Маршруты для комментариев
 	mux.Handle("/comments/add", app.requireAuthentication(http.HandlerFunc(app.addComment)))
-	mux.Handle("/comments/delete", app.requireAuthentication(http.HandlerFunc(app.deleteComment)))
+	mux.Handle("/comment/delete", app.requireAuthentication(http.HandlerFunc(app.deleteComment)))
 
 	mux.Handle("/user/googlecallback", http.HandlerFunc(app.googleCallbackHandler))
 	mux.Handle("/user/login/google", http.HandlerFunc(app.googleLogin))

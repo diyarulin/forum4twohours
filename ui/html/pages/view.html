@@ -62,7 +62,7 @@
                 <!-- Edit and Delete buttons -->
                 <div style="margin-top: 10px;">
                     {{if and $.User (eq .UserID $.User.ID)}}
-                    <form action="/comments/delete" method="post" style="display: inline;">
+                    <form action="/comment/delete" method="post" style="display: inline;">
                         <input type="hidden" name="comment_id" value="{{.ID}}">
                         <input type="hidden" name="post_id" value="{{.PostID}}">
                         <button type="submit" style="color: red;">Delete</button>

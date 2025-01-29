@@ -94,3 +94,28 @@ func (m *CommentModel) GetByID(commentID int) (*Comment, error) {
 
 	return comment, nil
 }
+func (m *CommentModel) UserComments(userId int) ([]*Comment, error) {
+	stmt := `SELECT id, post_id, content, likes, dislikes, created FROM comments WHERE user_id = ? ORDER BY created ASC`
+
+	rows, err := m.DB.Query(stmt, userId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var comments []*Comment
+	for rows.Next() {
+		comment := &Comment{}
+		err := rows.Scan(&comment.ID, &comment.PostID, &comment.Content, &comment.Likes, &comment.Dislikes, &comment.Created)
+		if err != nil {
+			return nil, err
+		}
+		comments = append(comments, comment)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return comments, nil
+}

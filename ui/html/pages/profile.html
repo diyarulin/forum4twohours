@@ -61,5 +61,32 @@
   {{else}}
     <p>You have no published posts.</p>
   {{end}}
+  <h2>Your Comments</h2>
+  {{if .Comments}}
+  <table>
+      <tr>
+          <th>ID</th>
+          <th>PostID</th>
+          <th>Content</th>
+          <th>Likes count</th>
+          <th>Dislikes count</th>
+          <th>Created</th>
+          <th>Modify</th>
+      </tr>
+      {{range .Comments}}
+      <tr>
+          <td>#{{.ID}}</td>
+          <td><a href='/post/view/{{.PostID}}'>{{.PostID}}</a></td>
+          <td>{{.Content}}</td>
+          <td>{{.Likes}}</td>
+          <td>{{.Dislikes}}</td>
+          <td>{{humanDate .Created}}</td>
+          <td><a href="/comment/delete/{{.ID}}">Delete</a></td>
+      </tr>
+      {{end}}
+  </table>
+  {{else}}
+      <p>You have no comments.</p>
+  {{end}}
 </main>
 {{end}}

@@ -22,7 +22,6 @@ type User struct {
 	Created        time.Time
 }
 
-
 type UserModel struct {
 	DB *sql.DB
 }
@@ -95,10 +94,11 @@ func hashPassword(password string, salt string) (string, error) {
 }
 
 func (m *UserModel) Get(id int) (*User, error) {
-	stmt := `SELECT name, email, hashed_password, created FROM users WHERE id = ?`
+	stmt := `SELECT id, name, email, hashed_password, created FROM users WHERE id = ?`
 	row := m.DB.QueryRow(stmt, id)
+
 	u := &User{}
-	err := row.Scan(&u.Name, &u.Email, &u.HashedPassword, &u.Created)
+	err := row.Scan(&u.ID, &u.Name, &u.Email, &u.HashedPassword, &u.Created)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNoRecord
@@ -116,7 +116,6 @@ func (m *UserModel) UpdatePassword(hashedPassword string, id int) error {
 	}
 	return nil
 }
-
 
 func (m *UserModel) GetOrCreateOAuthUser(email, name, provider, providerID string) (int, error) {
 	var id int
