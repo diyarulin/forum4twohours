@@ -52,7 +52,7 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 func (app *application) requireAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !app.isAuthenticated(r) {
-			app.flash(w, r, "To create post you need to login first.")
+			app.flash(w, r, "You should login before to do that")
 			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 			return
 		}

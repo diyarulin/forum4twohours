@@ -13,7 +13,10 @@ type Post struct {
 	Content   string
 	ImagePath string
 	Category  string
+	Likes     int
+	Dislikes  int
 	Author    string
+	AuthorID  int
 	Created   time.Time
 }
 
@@ -45,12 +48,12 @@ func (m *PostModel) Insert(title, content, imagePath, category, author string) (
 
 // Get возвращает пост по ID
 func (m *PostModel) Get(id int) (*Post, error) {
-	stmt := `SELECT id, title, content, image_path, category, author, created FROM posts WHERE id = ?`
+	stmt := `SELECT id, title, content, image_path, category, likes, dislikes, author, created FROM posts WHERE id = ?`
 
 	row := m.DB.QueryRow(stmt, id)
 
 	p := &Post{}
-	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.ImagePath, &p.Category, &p.Author, &p.Created)
+	err := row.Scan(&p.ID, &p.Title, &p.Content, &p.ImagePath, &p.Category, &p.Likes, &p.Dislikes, &p.Author, &p.Created)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNoRecord
@@ -88,10 +91,10 @@ func (m *PostModel) Latest() ([]*Post, error) {
 
 	return posts, nil
 }
-func (m *PostModel) UserPosts(user string) ([]*Post, error) {
-	stmt := `SELECT id, title, content, image_path,  category,  created FROM posts WHERE author = ?`
+func (m *PostModel) UserPosts(userId int) ([]*Post, error) {
+	stmt := `SELECT id, title, content, image_path,  category,  created FROM posts WHERE author_id = ?`
 
-	rows, err := m.DB.Query(stmt, user)
+	rows, err := m.DB.Query(stmt, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -114,13 +117,13 @@ func (m *PostModel) UserPosts(user string) ([]*Post, error) {
 
 	return posts, nil
 }
-func (m *PostModel) UpdatePost(title, content, imagePath, category, author, id string) error {
+func (m *PostModel) UpdatePost(title, content, imagePath, category, author, author_id, id string) error {
 	// Категория и автор могут быть заданы по умолчанию
 	// defaultCategory := "Uncategorized"
 	// defaultAuthor := "Anonymous"
-	stmt := `UPDATE posts SET title = ?, content = ?, image_path = ?, category = ?, author = ? WHERE id = ?`
+	stmt := `UPDATE posts SET title = ?, content = ?, image_path = ?, category = ?, author = ?, author_id WHERE id = ?`
 
-	_, err := m.DB.Exec(stmt, title, content, imagePath, category, author, id)
+	_, err := m.DB.Exec(stmt, title, content, imagePath, category, author, author_id, id)
 	if err != nil {
 		return err
 	}
@@ -142,7 +145,7 @@ func (m *PostModel) DeletePost(id int) (string, error) {
 }
 
 func (m *PostModel) SortByCategory(category string) ([]*Post, error) {
-	stmt := `SELECT id, title, content, image_path, category, created, author FROM posts WHERE category = ?`
+	stmt := `SELECT id, title, content, image_path, category, created, author, author_id FROM posts WHERE category = ?`
 	rows, err := m.DB.Query(stmt, category)
 	if err != nil {
 		return nil, err
@@ -151,7 +154,7 @@ func (m *PostModel) SortByCategory(category string) ([]*Post, error) {
 	var posts []*Post
 	for rows.Next() {
 		post := &Post{}
-		err = rows.Scan(&post.ID, &post.Title, &post.Content, &post.ImagePath, &post.Category, &post.Created, &post.Author)
+		err = rows.Scan(&post.ID, &post.Title, &post.Content, &post.ImagePath, &post.Category, &post.Created, &post.Author, &post.AuthorID)
 		if err != nil {
 			return nil, err
 		}

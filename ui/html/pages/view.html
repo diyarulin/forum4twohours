@@ -19,6 +19,20 @@
         <div class='metadata'>
             <time>Created: {{humanDate .Created}}</time>
         </div>
+        
+        <!-- Like/Dislike buttons for post (only for authenticated users) -->
+        {{if $.IsAuthenticated}}
+        <div style="margin-top: 10px;">
+            <form action="/post/like" method="post" style="display: inline;">
+                <input type="hidden" name="post_id" value="{{.ID}}">
+                <button type="submit">👍 {{.Likes}}</button>
+            </form>
+            <form action="/post/dislike" method="post" style="display: inline;">
+                <input type="hidden" name="post_id" value="{{.ID}}">
+                <button type="submit">👎 {{.Dislikes}}</button>
+            </form>
+        </div>
+        {{end}}
     </div>
     {{end}}
 
@@ -28,12 +42,26 @@
         <ul>
             {{range .Comments}}
             <li style="padding: 10px; border-bottom: 1px solid #ddd;">
-                <strong>{{.Author}}</strong> <em>{{humanDate .Created}}</em>
+                <strong>{{.UserID}}</strong> <em>{{humanDate .Created}}</em>
                 <p>{{.Content}}</p>
+                
+                <!-- Like/Dislike buttons for comment (only for authenticated users) -->
+                {{if $.IsAuthenticated}}
+                <div>
+                    <form action="/comment/like" method="post" style="display: inline;">
+                        <input type="hidden" name="comment_id" value="{{.ID}}">
+                        <button type="submit">👍 {{.Likes}}</button>
+                    </form>
+                    <form action="/comment/dislike" method="post" style="display: inline;">
+                        <input type="hidden" name="comment_id" value="{{.ID}}">
+                        <button type="submit">👎 {{.Dislikes}}</button>
+                    </form>
+                </div>
+                {{end}}
                 
                 <!-- Edit and Delete buttons -->
                 <div style="margin-top: 10px;">
-                    {{if and $.User (eq .Author $.User.Name)}}
+                    {{if and $.User (eq .UserID $.User.ID)}}
                     <form action="/comments/delete" method="post" style="display: inline;">
                         <input type="hidden" name="comment_id" value="{{.ID}}">
                         <input type="hidden" name="post_id" value="{{.PostID}}">

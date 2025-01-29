@@ -129,6 +129,7 @@ func (app *application) postView(w http.ResponseWriter, r *http.Request) {
 		}
 		data.User = user
 	}
+	data.IsAuthenticated = app.isAuthenticated(r)
 	app.render(w, http.StatusOK, "view.html", data)
 }
 
@@ -401,7 +402,7 @@ func (app *application) profile(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-	userPosts, err := app.posts.UserPosts(user.Name)
+	userPosts, err := app.posts.UserPosts(user.ID)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -721,11 +722,15 @@ func (app *application) addComment(w http.ResponseWriter, r *http.Request) {
 		id, err = strconv.Atoi(path)
 	}
 	content := r.FormValue("content")
-	author := r.FormValue("author")
-
+	// author := r.FormValue("author")
+	user_id, err := app.getCurrentUser(r)
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
 	comment := &models.Comment{
 		PostID:  id,
-		Author:  author,
+		UserID:  user_id,
 		Content: content,
 		Created: time.Now(),
 	}
@@ -787,4 +792,274 @@ func (app *application) deleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 	app.flash(w, r, "Comment deleted successfully!")
 	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", postID), http.StatusSeeOther)
+}
+func (app *application) likePost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		app.methodNotAllowed(w)
+		return
+	}
+
+	postIDStr := r.FormValue("post_id")
+	if postIDStr == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	postID, err := strconv.Atoi(postIDStr)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := app.getCurrentUser(r)
+	if err != nil {
+		app.clientError(w, http.StatusUnauthorized)
+		return
+	}
+
+	err = app.reactions.LikePost(postID, userID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.flash(w, r, "Post liked successfully!")
+	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", postID), http.StatusSeeOther)
+}
+
+func (app *application) dislikePost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		app.methodNotAllowed(w)
+		return
+	}
+
+	postIDStr := r.FormValue("post_id")
+	if postIDStr == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	postID, err := strconv.Atoi(postIDStr)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := app.getCurrentUser(r)
+	if err != nil {
+		app.clientError(w, http.StatusUnauthorized)
+		return
+	}
+
+	err = app.reactions.DislikePost(postID, userID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.flash(w, r, "Post disliked successfully!")
+	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", postID), http.StatusSeeOther)
+}
+
+func (app *application) removeLikePost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		app.methodNotAllowed(w)
+		return
+	}
+
+	postIDStr := r.FormValue("post_id")
+	if postIDStr == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	postID, err := strconv.Atoi(postIDStr)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := app.getCurrentUser(r)
+	if err != nil {
+		app.clientError(w, http.StatusUnauthorized)
+		return
+	}
+
+	err = app.reactions.RemoveLikePost(postID, userID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.flash(w, r, "Like removed successfully!")
+	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", postID), http.StatusSeeOther)
+}
+
+func (app *application) removeDislikePost(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		app.methodNotAllowed(w)
+		return
+	}
+
+	postIDStr := r.FormValue("post_id")
+	if postIDStr == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	postID, err := strconv.Atoi(postIDStr)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := app.getCurrentUser(r)
+	if err != nil {
+		app.clientError(w, http.StatusUnauthorized)
+		return
+	}
+
+	err = app.reactions.RemoveDislikePost(postID, userID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.flash(w, r, "Dislike removed successfully!")
+	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", postID), http.StatusSeeOther)
+}
+func (app *application) likeComment(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		app.methodNotAllowed(w)
+		return
+	}
+
+	commentIDStr := r.FormValue("comment_id")
+	if commentIDStr == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	commentID, err := strconv.Atoi(commentIDStr)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := app.getCurrentUser(r)
+	if err != nil {
+		app.clientError(w, http.StatusUnauthorized)
+		return
+	}
+
+	err = app.reactions.LikeComment(commentID, userID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.flash(w, r, "Comment liked successfully!")
+	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", commentID), http.StatusSeeOther)
+}
+
+func (app *application) dislikeComment(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		app.methodNotAllowed(w)
+		return
+	}
+
+	commentIDStr := r.FormValue("comment_id")
+	if commentIDStr == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	commentID, err := strconv.Atoi(commentIDStr)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := app.getCurrentUser(r)
+	if err != nil {
+		app.clientError(w, http.StatusUnauthorized)
+		return
+	}
+
+	err = app.reactions.DislikeComment(commentID, userID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.flash(w, r, "Comment disliked successfully!")
+	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", commentID), http.StatusSeeOther)
+}
+
+func (app *application) removeLikeComment(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		app.methodNotAllowed(w)
+		return
+	}
+
+	commentIDStr := r.FormValue("comment_id")
+	if commentIDStr == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	commentID, err := strconv.Atoi(commentIDStr)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := app.getCurrentUser(r)
+	if err != nil {
+		app.clientError(w, http.StatusUnauthorized)
+		return
+	}
+
+	err = app.reactions.RemoveLikeComment(commentID, userID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.flash(w, r, "Like removed successfully!")
+	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", commentID), http.StatusSeeOther)
+}
+
+func (app *application) removeDislikeComment(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		app.methodNotAllowed(w)
+		return
+	}
+
+	commentIDStr := r.FormValue("comment_id")
+	if commentIDStr == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	commentID, err := strconv.Atoi(commentIDStr)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	userID, err := app.getCurrentUser(r)
+	if err != nil {
+		app.clientError(w, http.StatusUnauthorized)
+		return
+	}
+
+	err = app.reactions.RemoveDislikeComment(commentID, userID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.flash(w, r, "Dislike removed successfully!")
+	http.Redirect(w, r, fmt.Sprintf("/post/view/%d", commentID), http.StatusSeeOther)
 }

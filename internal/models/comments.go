@@ -6,18 +6,20 @@ import (
 )
 
 type Comment struct {
-	ID      int
-	PostID  int
-	Content string
-	Author  string
-	Created time.Time
+	ID       int
+	PostID   int
+	Content  string
+	Likes    int
+	Dislikes int
+	UserID   int
+	Created  time.Time
 }
 type CommentModel struct {
 	DB *sql.DB
 }
 
 func (m *CommentModel) GetByPostID(postID int) ([]*Comment, error) {
-	stmt := `SELECT id, post_id, content, author, created FROM comments WHERE post_id = ? ORDER BY created ASC`
+	stmt := `SELECT id, post_id, content, likes, dislikes, user_id, created FROM comments WHERE post_id = ? ORDER BY created ASC`
 
 	rows, err := m.DB.Query(stmt, postID)
 	if err != nil {
@@ -28,7 +30,7 @@ func (m *CommentModel) GetByPostID(postID int) ([]*Comment, error) {
 	var comments []*Comment
 	for rows.Next() {
 		comment := &Comment{}
-		err := rows.Scan(&comment.ID, &comment.PostID, &comment.Content, &comment.Author, &comment.Created)
+		err := rows.Scan(&comment.ID, &comment.PostID, &comment.Content, &comment.Likes, &comment.Dislikes, &comment.UserID, &comment.Created)
 		if err != nil {
 			return nil, err
 		}
@@ -43,9 +45,9 @@ func (m *CommentModel) GetByPostID(postID int) ([]*Comment, error) {
 }
 
 func (m *CommentModel) Insert(comment *Comment) error {
-	stmt := `INSERT INTO comments (post_id, content, author, created) VALUES (?, ?, ?, DATETIME('now', 'localtime'))`
+	stmt := `INSERT INTO comments (post_id, content, user_id, created) VALUES (?, ?, ?, DATETIME('now', 'localtime'))`
 
-	result, err := m.DB.Exec(stmt, comment.PostID, comment.Content, comment.Author)
+	result, err := m.DB.Exec(stmt, comment.PostID, comment.Content, comment.UserID)
 	if err != nil {
 		return err
 	}
@@ -80,12 +82,12 @@ func (m *CommentModel) Update(commentID int, content string) error {
 	return nil
 }
 func (m *CommentModel) GetByID(commentID int) (*Comment, error) {
-	stmt := `SELECT id, post_id, content, author, created FROM comments WHERE id = ?`
+	stmt := `SELECT id, post_id, content, user_id, created FROM comments WHERE id = ?`
 
 	row := m.DB.QueryRow(stmt, commentID)
 
 	comment := &Comment{}
-	err := row.Scan(&comment.ID, &comment.PostID, &comment.Content, &comment.Author, &comment.Created)
+	err := row.Scan(&comment.ID, &comment.PostID, &comment.Content, &comment.UserID, &comment.Created)
 	if err != nil {
 		return nil, err
 	}

@@ -17,6 +17,8 @@ type templateData struct {
 	Comment          *models.Comment
 	Comments         []*models.Comment
 	Form             any
+	IsLiked          bool
+	IsDisliked       bool
 	SelectedCategory string
 	Flash            string
 	IsAuthenticated  bool

@@ -21,6 +21,7 @@ type application struct {
 	posts         *models.PostModel
 	users         *models.UserModel
 	comments      *models.CommentModel
+	reactions     *models.ReactionModel
 	templateCache map[string]*template.Template
 	sessions      map[string]int
 	mu            sync.Mutex
@@ -56,6 +57,7 @@ func main() {
 		posts:         &models.PostModel{DB: db},
 		users:         &models.UserModel{DB: db},
 		comments:      &models.CommentModel{DB: db},
+		reactions:     &models.ReactionModel{DB: db},
 		templateCache: templateCache,
 		sessions:      make(map[string]int),
 	}
