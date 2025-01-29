@@ -81,7 +81,11 @@
           <td>{{.Likes}}</td>
           <td>{{.Dislikes}}</td>
           <td>{{humanDate .Created}}</td>
-          <td><a href="/comment/delete/{{.ID}}">Delete</a></td>
+          <td> <form action="/comment/delete" method="post" style="display: inline;">
+            <input type="hidden" name="comment_id" value="{{.ID}}">
+            <input type="hidden" name="post_id" value="{{.PostID}}">
+            <button type="submit" style="color: red;">Delete</button>
+        </form></td>
       </tr>
       {{end}}
   </table>

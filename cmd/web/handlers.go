@@ -412,14 +412,12 @@ func (app *application) profile(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-	fmt.Printf("user id %d/n", user.ID)
 
 	userComments, err := app.comments.UserComments(id)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-	fmt.Printf("user id %d/n", user.ID)
 	data := app.newTemplateData(w, r)
 	data.Posts = userPosts
 	data.Comments = userComments
