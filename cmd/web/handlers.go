@@ -116,6 +116,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		data.Categories = categories
 		data.IsAuthenticated = app.isAuthenticated(r)
 		app.render(w, http.StatusOK, "home.html", data)
+		return
 	} else if err != nil {
 		app.serverError(w, err)
 		return
@@ -130,7 +131,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	data.User = user
 	data.IsAuthenticated = app.isAuthenticated(r)
 	app.render(w, http.StatusOK, "home.html", data)
-
+	return
 }
 
 func (app *application) postView(w http.ResponseWriter, r *http.Request) {
