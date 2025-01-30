@@ -28,6 +28,7 @@ type templateData struct {
 	Status              int
 	Message             string
 	PendingPosts        []*models.Post
+	Reports             []*models.Report
 }
 
 func humanDate(t time.Time) string {

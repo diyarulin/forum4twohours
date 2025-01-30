@@ -47,5 +47,8 @@ func (app *application) routes() http.Handler {
 	mux.Handle("/user/promote", app.requireRole("admin", http.HandlerFunc(app.promoteUser)))
 	mux.Handle("/user/demote", app.requireRole("admin", http.HandlerFunc(app.demoteUser)))
 
+	mux.Handle("/report", app.requireRole("moderator", http.HandlerFunc(app.reportPost)))
+	mux.Handle("/reports", app.requireRole("admin", http.HandlerFunc(app.viewReports)))
+
 	return app.recoverPanic(app.logRequest(secureHeaders(mux)))
 }

@@ -4,17 +4,17 @@
 <h2>Latest Posts</h2>
 <form method="GET" action="/" class="mb-3">
     <div class="input-group">
-      <label class="form-label">Select Category:</label>
-      <select name="Category" class="form-control">
-        <option value="News" {{if eq .SelectedCategory "News"}}selected{{end}}>News</option>
-        <option value="Technology" {{if eq .SelectedCategory "Technology"}}selected{{end}}>Technology</option>
-        <option value="Funny" {{if eq .SelectedCategory "Funny"}}selected{{end}}>Funny</option>
-        <option value="Sport" {{if eq .SelectedCategory "Sport"}}selected{{end}}>Sport</option>
-        <option value="Other" {{if eq .SelectedCategory "Other"}}selected{{end}}>Other</option>
-      </select>
-      <button type="submit" class="btn btn-primary">Sort</button>
+        <label class="form-label">Select Category:</label>
+        <select name="Category" class="form-control">
+            <option value="News" {{if eq .SelectedCategory "News"}}selected{{end}}>News</option>
+            <option value="Technology" {{if eq .SelectedCategory "Technology"}}selected{{end}}>Technology</option>
+            <option value="Funny" {{if eq .SelectedCategory "Funny"}}selected{{end}}>Funny</option>
+            <option value="Sport" {{if eq .SelectedCategory "Sport"}}selected{{end}}>Sport</option>
+            <option value="Other" {{if eq .SelectedCategory "Other"}}selected{{end}}>Other</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Sort</button>
     </div>
-  </form>
+</form>
 {{if .Posts}}
 <table>
     <tr>
@@ -23,6 +23,9 @@
         <th>Created</th>
         <th>Author</th>
         <th>ID</th>
+        {{if and .User (eq .User.Role "moderator")}}
+        <th>Action</th>
+        {{end}}
     </tr>
     {{range .Posts}}
     <tr>
@@ -31,6 +34,15 @@
         <td>{{humanDate .Created}}</td>
         <td>{{.Author}}</td>
         <td>#{{.ID}}</td>
+        {{if and $.User (eq $.User.Role "moderator")}}
+        <td>
+            <form action="/report" method="post">
+                <input type="hidden" name="post_id" value="{{.ID}}">
+                <textarea name="reason" placeholder="Reason for report" required></textarea>
+                <button type="submit">Report to Admin</button>
+            </form>
+        </td>
+        {{end}}
     </tr>
     {{end}}
 </table>

@@ -26,6 +26,7 @@ type application struct {
 	templateCache      map[string]*template.Template
 	sessions           map[string]int
 	mu                 sync.Mutex
+	reports            *models.ReportModel
 }
 
 func main() {
@@ -62,6 +63,7 @@ func main() {
 		reactions:          &models.ReactionModel{DB: db},
 		templateCache:      templateCache,
 		sessions:           make(map[string]int),
+		reports:            &models.ReportModel{DB: db}, // Добавляем поле reports корректно
 	}
 
 	tlsConfig := &tls.Config{

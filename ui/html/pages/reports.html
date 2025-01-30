@@ -1,0 +1,27 @@
+{{define "title"}}Reports{{end}}
+
+{{define "main"}}
+<h2>Reports</h2>
+{{if .Reports}}
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Post ID</th>
+        <th>Reporter ID</th>
+        <th>Reason</th>
+        <th>Created At</th>
+    </tr>
+    {{range .Reports}}
+    <tr>
+        <td>#{{.ID}}</td>
+        <td><a href='/post/view/{{.PostID}}'>{{.PostID}}</a></td>
+        <td>{{.ReporterID}}</td>
+        <td>{{.Reason}}</td>
+        <td>{{humanDate .CreatedAt}}</td>
+    </tr>
+    {{end}}
+</table>
+{{else}}
+<p>No reports found.</p>
+{{end}}
+{{end}}
