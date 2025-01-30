@@ -46,16 +46,20 @@ Users can filter posts by:
 ## Setup & Installation
 1. Clone the repository:
    ```sh
-   git clone https://github.com/sterekba/forum.git
+   git clone git@github.com:diyarulin/forum4twohours.git
    git switch check_merge
-   cd forum
+   cd forum4twohours
    ```
-2. Build and run with Docker:
+2. Run without Docker:
+   ```sh
+   go run ./cmd/web
+   ```
+3. Build and run with Docker:
    ```sh
    sudo docker-compose build .
    sudo docker-compose up
    ```
-3. Access the forum at `http://localhost:8080`
+4. Access the forum at `http://localhost:8080`
 
 ## Contributors
 - **Shyngys Terekbayev** ([GitHub](https://github.com/sterekba))
