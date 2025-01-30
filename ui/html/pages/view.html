@@ -19,6 +19,9 @@
         <div class='metadata'>
             <time>Created: {{humanDate .Created}}</time>
         </div>
+        <div class='metadata'>
+            <time>Author: {{ .Author}}</time>
+        </div>
         
         <!-- Like/Dislike buttons for post (only for authenticated users) -->
         {{if $.IsAuthenticated}}
@@ -42,7 +45,7 @@
         <ul>
             {{range .Comments}}
             <li style="padding: 10px; border-bottom: 1px solid #ddd;">
-                <strong>{{.UserID}}</strong> <em>{{humanDate .Created}}</em>
+                <strong>{{.Author}}</strong> <em>{{humanDate .Created}}</em>
                 <p>{{.Content}}</p>
                 
                 <!-- Like/Dislike buttons for comment (only for authenticated users) -->

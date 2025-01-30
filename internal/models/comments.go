@@ -12,6 +12,7 @@ type Comment struct {
 	Likes    int
 	Dislikes int
 	UserID   int
+	Author   string
 	Created  time.Time
 }
 type CommentModel struct {
@@ -19,7 +20,7 @@ type CommentModel struct {
 }
 
 func (m *CommentModel) GetByPostID(postID int) ([]*Comment, error) {
-	stmt := `SELECT id, post_id, content, likes, dislikes, user_id, created FROM comments WHERE post_id = ? ORDER BY created ASC`
+	stmt := `SELECT id, post_id, content, likes, dislikes, user_id, author, created FROM comments WHERE post_id = ? ORDER BY created ASC`
 
 	rows, err := m.DB.Query(stmt, postID)
 	if err != nil {
@@ -30,7 +31,7 @@ func (m *CommentModel) GetByPostID(postID int) ([]*Comment, error) {
 	var comments []*Comment
 	for rows.Next() {
 		comment := &Comment{}
-		err := rows.Scan(&comment.ID, &comment.PostID, &comment.Content, &comment.Likes, &comment.Dislikes, &comment.UserID, &comment.Created)
+		err := rows.Scan(&comment.ID, &comment.PostID, &comment.Content, &comment.Likes, &comment.Dislikes, &comment.UserID, &comment.Author, &comment.Created)
 		if err != nil {
 			return nil, err
 		}
@@ -45,9 +46,9 @@ func (m *CommentModel) GetByPostID(postID int) ([]*Comment, error) {
 }
 
 func (m *CommentModel) Insert(comment *Comment) error {
-	stmt := `INSERT INTO comments (post_id, content, user_id, created) VALUES (?, ?, ?, DATETIME('now', 'localtime'))`
+	stmt := `INSERT INTO comments (post_id, content, user_id, author, created) VALUES (?, ?, ?, ?,  DATETIME('now', 'localtime'))`
 
-	result, err := m.DB.Exec(stmt, comment.PostID, comment.Content, comment.UserID)
+	result, err := m.DB.Exec(stmt, comment.PostID, comment.Content, comment.UserID, comment.Author)
 	if err != nil {
 		return err
 	}
@@ -82,12 +83,12 @@ func (m *CommentModel) Update(commentID int, content string) error {
 	return nil
 }
 func (m *CommentModel) GetByID(commentID int) (*Comment, error) {
-	stmt := `SELECT id, post_id, content, user_id, created FROM comments WHERE id = ?`
+	stmt := `SELECT id, post_id, content, likes, dislikes, user_id, author,  created FROM comments WHERE id = ?`
 
 	row := m.DB.QueryRow(stmt, commentID)
 
 	comment := &Comment{}
-	err := row.Scan(&comment.ID, &comment.PostID, &comment.Content, &comment.UserID, &comment.Created)
+	err := row.Scan(&comment.ID, &comment.PostID, &comment.Content, &comment.Likes, &comment.Dislikes, &comment.UserID, &comment.Author, &comment.Created)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +96,7 @@ func (m *CommentModel) GetByID(commentID int) (*Comment, error) {
 	return comment, nil
 }
 func (m *CommentModel) UserComments(userId int) ([]*Comment, error) {
-	stmt := `SELECT id, post_id, content, likes, dislikes, created FROM comments WHERE user_id = ? ORDER BY created ASC`
+	stmt := `SELECT id, post_id, content, likes, dislikes, user_id, author,  created FROM comments WHERE user_id = ? ORDER BY created ASC`
 
 	rows, err := m.DB.Query(stmt, userId)
 	if err != nil {
@@ -106,7 +107,7 @@ func (m *CommentModel) UserComments(userId int) ([]*Comment, error) {
 	var comments []*Comment
 	for rows.Next() {
 		comment := &Comment{}
-		err := rows.Scan(&comment.ID, &comment.PostID, &comment.Content, &comment.Likes, &comment.Dislikes, &comment.Created)
+		err := rows.Scan(&comment.ID, &comment.PostID, &comment.Content, &comment.Likes, &comment.Dislikes, &comment.UserID, &comment.Author, &comment.Created)
 		if err != nil {
 			return nil, err
 		}

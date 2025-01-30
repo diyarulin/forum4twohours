@@ -77,7 +77,7 @@ func (m *PostModel) Get(id int) (*Post, error) {
 
 // Latest возвращает 10 последних постов
 func (m *PostModel) Latest() ([]*Post, error) {
-	stmt := `SELECT id, title, content, image_path,  category, author, author_id, created FROM posts ORDER BY created DESC LIMIT 10`
+	stmt := `SELECT id, title, content, image_path,  category, author, author_id, created FROM posts WHERE status = "approved" ORDER BY created DESC LIMIT 10`
 
 	rows, err := m.DB.Query(stmt)
 	if err != nil {
@@ -103,7 +103,7 @@ func (m *PostModel) Latest() ([]*Post, error) {
 	return posts, nil
 }
 func (m *PostModel) UserPosts(userId int) ([]*Post, error) {
-	stmt := `SELECT id, title, content, image_path,  category,  created FROM posts WHERE author_id = ?`
+	stmt := `SELECT id, title, content, image_path,  category, author, author_id,  created FROM posts WHERE author_id = ?`
 
 	rows, err := m.DB.Query(stmt, userId)
 	if err != nil {
@@ -115,7 +115,7 @@ func (m *PostModel) UserPosts(userId int) ([]*Post, error) {
 
 	for rows.Next() {
 		p := &Post{}
-		err = rows.Scan(&p.ID, &p.Title, &p.Content, &p.ImagePath, &p.Category, &p.Created)
+		err = rows.Scan(&p.ID, &p.Title, &p.Content, &p.ImagePath, &p.Category, &p.Author, &p.AuthorID, &p.Created)
 		if err != nil {
 			return nil, err
 		}
@@ -156,7 +156,7 @@ func (m *PostModel) DeletePost(id int) (string, error) {
 }
 
 func (m *PostModel) SortByCategory(category string) ([]*Post, error) {
-	stmt := `SELECT id, title, content, image_path, category, created, author, author_id FROM posts WHERE category = ?`
+	stmt := `SELECT id, title, content, image_path, category, created, author, author_id FROM posts WHERE category = ? AND status = "approved"`
 	rows, err := m.DB.Query(stmt, category)
 	if err != nil {
 		return nil, err

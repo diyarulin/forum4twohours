@@ -21,6 +21,7 @@
         <th>Title</th>
         <th>Category</th>
         <th>Created</th>
+        <th>Author</th>
         <th>ID</th>
     </tr>
     {{range .Posts}}
@@ -28,6 +29,7 @@
         <td><a href='/post/view/{{.ID}}'>{{.Title}}</a></td>
         <td>{{.Category}}</td>
         <td>{{humanDate .Created}}</td>
+        <td>{{.Author}}</td>
         <td>#{{.ID}}</td>
     </tr>
     {{end}}

@@ -424,8 +424,7 @@ func (app *application) profile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userPosts, err := app.posts.UserPosts(user.ID)
-	fmt.Printf("user id %d/n", id)
+	userPosts, err := app.posts.UserPosts(id)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -640,10 +639,6 @@ func (app *application) EditPost(w http.ResponseWriter, r *http.Request) {
 			app.serverError(w, err)
 			return
 		}
-		if post.AuthorID != form.AuthorID {
-			app.clientError(w, http.StatusForbidden)
-			return
-		}
 		if form.ImagePath == "" {
 			form.ImagePath = post.ImagePath
 		}
@@ -763,9 +758,15 @@ func (app *application) addComment(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
+	user, err := app.users.Get(user_id)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 	comment := &models.Comment{
 		PostID:  id,
 		UserID:  user_id,
+		Author:  user.Name,
 		Content: content,
 		Created: time.Now(),
 	}

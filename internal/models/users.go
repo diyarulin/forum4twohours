@@ -95,11 +95,11 @@ func hashPassword(password string, salt string) (string, error) {
 }
 
 func (m *UserModel) Get(id int) (*User, error) {
-	stmt := `SELECT name, email, hashed_password, created, role FROM users WHERE id = ?`
+	stmt := `SELECT id, name, email, hashed_password, created, role FROM users WHERE id = ?`
 	row := m.DB.QueryRow(stmt, id)
 
 	u := &User{}
-	err := row.Scan(&u.Name, &u.Email, &u.HashedPassword, &u.Created, &u.Role)
+	err := row.Scan(&u.ID, &u.Name, &u.Email, &u.HashedPassword, &u.Created, &u.Role)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNoRecord
