@@ -21,6 +21,7 @@ type application struct {
 	posts              *models.PostModel
 	users              *models.UserModel
 	comments           *models.CommentModel
+	categories         *models.CategoryModel
 	reactions          *models.ReactionModel
 	notificationsModel *models.NotificationModel
 	templateCache      map[string]*template.Template
@@ -59,6 +60,7 @@ func main() {
 		posts:              &models.PostModel{DB: db},
 		users:              &models.UserModel{DB: db},
 		comments:           &models.CommentModel{DB: db},
+		categories:         &models.CategoryModel{DB: db},
 		notificationsModel: &models.NotificationModel{DB: db},
 		reactions:          &models.ReactionModel{DB: db},
 		templateCache:      templateCache,

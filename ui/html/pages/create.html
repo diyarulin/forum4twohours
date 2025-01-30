@@ -28,11 +28,9 @@
     <div>
         <label for="Category">Category:</label>
         <select id="Category" name="Category" required class="form-control">
-          <option value="News">News</option>
-          <option value="Technology">Technology</option>
-          <option value="Funny">Funny</option>
-          <option value="Sport">Sport</option>
-          <option value="Other">Other</option>
+          {{range .Categories}}
+            <option value="{{.Name}}">{{.Name}}</option>
+          {{end}}
         </select><br><br>
     </div>
     <div>

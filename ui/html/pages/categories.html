@@ -1,0 +1,29 @@
+{{define "title"}}Manage Categories{{end}}
+
+{{define "main"}}
+<div class="container">
+    <h2>Category Management</h2>
+    
+    <form action="/admin/categories/add" method="POST" class="mb-4">
+        <div class="form-group">
+            <input type="text" name="name" placeholder="New category name" required>
+            <button type="submit" class="btn btn-success">Add</button>
+        </div>
+    </form>
+
+    <table class="table">
+        {{range .Categories}}
+        <tr>
+            <td>{{.ID}}</td>
+            <td>{{.Name}}</td>
+            <td>
+                <form action="/admin/categories/delete" method="POST">
+                    <input type="hidden" name="id" value="{{.ID}}">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {{end}}
+    </table>
+</div>
+{{end}}

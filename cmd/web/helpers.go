@@ -137,3 +137,11 @@ func (app *application) isAuthenticated(r *http.Request) bool {
 func (app *application) methodNotAllowed(w http.ResponseWriter) {
 	app.clientError(w, http.StatusMethodNotAllowed)
 }
+func (app *application) isAdminRequest(r *http.Request) bool {
+	userID, err := app.getCurrentUser(r)
+	return err == nil && app.isAdmin(userID)
+}
+func (app *application) isAdmin(userID int) bool {
+	user, err := app.users.Get(userID)
+	return err == nil && user.Role == "admin"
+}

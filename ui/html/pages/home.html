@@ -6,15 +6,14 @@
     <div class="input-group">
         <label class="form-label">Select Category:</label>
         <select name="Category" class="form-control">
-            <option value="News" {{if eq .SelectedCategory "News"}}selected{{end}}>News</option>
-            <option value="Technology" {{if eq .SelectedCategory "Technology"}}selected{{end}}>Technology</option>
-            <option value="Funny" {{if eq .SelectedCategory "Funny"}}selected{{end}}>Funny</option>
-            <option value="Sport" {{if eq .SelectedCategory "Sport"}}selected{{end}}>Sport</option>
-            <option value="Other" {{if eq .SelectedCategory "Other"}}selected{{end}}>Other</option>
+            {{range .Categories}}
+            <option value="{{.Name}}" {{if eq $.SelectedCategory .Name}}selected{{end}}>{{.Name}}</option>
+            {{end}}
         </select>
         <button type="submit" class="btn btn-primary">Sort</button>
     </div>
 </form>
+
 {{if .Posts}}
 <table>
     <tr>

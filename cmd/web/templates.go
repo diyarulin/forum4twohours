@@ -19,6 +19,7 @@ type templateData struct {
 	Comments            []*models.Comment
 	Notifications       []*models.Notification
 	UnreadNotifications int
+	Categories          []*models.Category
 	Form                any
 	IsLiked             bool
 	IsDisliked          bool

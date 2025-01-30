@@ -86,6 +86,12 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data.Posts = posts
+	categories, err := app.categories.GetAll()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	data.Categories = categories
 	app.render(w, http.StatusOK, "home.html", data)
 }
 
@@ -138,14 +144,20 @@ func (app *application) postView(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) postCreateForm(w http.ResponseWriter, r *http.Request) {
 
-	// Проверяем метод запроса
 	if r.Method == http.MethodGet {
+		categories, err := app.categories.GetAll()
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+
 		data := app.newTemplateData(w, r)
 		data.Form = &postCreateForm{
 			Validator: validator.Validator{
 				FieldErrors: map[string]string{},
 			},
 		}
+		data.Categories = categories
 		app.render(w, http.StatusOK, "create.html", data)
 		return
 	}
@@ -1211,4 +1223,66 @@ func (app *application) notifications(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(w, r)
 	data.Notifications = notifications
 	app.render(w, http.StatusOK, "notifications.html", data)
+}
+func (app *application) manageCategories(w http.ResponseWriter, r *http.Request) {
+	// Проверка прав администратора
+	userID, err := app.getCurrentUser(r)
+	if err != nil || !app.isAdmin(userID) {
+		app.clientError(w, http.StatusForbidden)
+		return
+	}
+
+	categories, err := app.categories.GetAll()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	data := app.newTemplateData(w, r)
+	data.Categories = categories
+	app.render(w, http.StatusOK, "categories.html", data)
+}
+
+func (app *application) addCategory(w http.ResponseWriter, r *http.Request) {
+	if !app.isAdminRequest(r) {
+		app.clientError(w, http.StatusForbidden)
+		return
+	}
+
+	name := r.FormValue("name")
+	if err := app.categories.Insert(name); err != nil {
+		if errors.Is(err, models.ErrDuplicateCategory) {
+			app.flash(w, r, "Category already exists!")
+		} else {
+			app.serverError(w, err)
+		}
+	}
+	http.Redirect(w, r, "/admin/categories", http.StatusSeeOther)
+}
+
+func (app *application) updateCategory(w http.ResponseWriter, r *http.Request) {
+	if !app.isAdminRequest(r) {
+		app.clientError(w, http.StatusForbidden)
+		return
+	}
+
+	id, _ := strconv.Atoi(r.FormValue("id"))
+	newName := r.FormValue("name")
+	if err := app.categories.Update(id, newName); err != nil {
+		app.serverError(w, err)
+	}
+	http.Redirect(w, r, "/admin/categories", http.StatusSeeOther)
+}
+
+func (app *application) deleteCategory(w http.ResponseWriter, r *http.Request) {
+	if !app.isAdminRequest(r) {
+		app.clientError(w, http.StatusForbidden)
+		return
+	}
+
+	id, _ := strconv.Atoi(r.FormValue("id"))
+	if err := app.categories.Delete(id); err != nil {
+		app.serverError(w, err)
+	}
+	http.Redirect(w, r, "/admin/categories", http.StatusSeeOther)
 }

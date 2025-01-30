@@ -49,6 +49,9 @@ func (app *application) routes() http.Handler {
 
 	mux.Handle("/report", app.requireRole("moderator", http.HandlerFunc(app.reportPost)))
 	mux.Handle("/reports", app.requireRole("admin", http.HandlerFunc(app.viewReports)))
-
+	mux.Handle("/admin/categories", app.requireRole("admin", http.HandlerFunc(app.manageCategories)))
+	mux.Handle("/admin/categories/add", app.requireRole("admin", http.HandlerFunc(app.addCategory)))
+	mux.Handle("/admin/categories/update", app.requireRole("admin", http.HandlerFunc(app.updateCategory)))
+	mux.Handle("/admin/categories/delete", app.requireRole("admin", http.HandlerFunc(app.deleteCategory)))
 	return app.recoverPanic(app.logRequest(secureHeaders(mux)))
 }

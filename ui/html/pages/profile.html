@@ -1,11 +1,17 @@
 {{define "title"}}User Profile{{end}}
 {{define "main"}}
 <main>
-    {{if or (eq .User.Role "moderator") (eq .User.Role "admin")}}
+    {{if eq .User.Role "moderator"}}
     <div class="moderation-link">
         <a href="/moderation">🚨 Moderation Panel</a>
     </div>
     {{end}}
+    {{if eq .User.Role "admin"}}
+    <div class="moderation-link">
+        <a href='/admin/categories'>Manage Categories</a>
+    </div>
+    {{end}}
+   
   <h1>User Profile</h1>
   {{with .User}}
   <p><strong>Name:</strong> {{.Name}}</p>
