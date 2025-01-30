@@ -22,9 +22,7 @@ type NotificationModel struct {
 }
 
 func (m *NotificationModel) Insert(userID, actorID int, ntype string, postID, commentID int) error {
-	stmt := `INSERT INTO notifications 
-	(user_id, type, post_id, comment_id, actor_id) 
-	VALUES (?, ?, ?, ?, ?)`
+	stmt := `INSERT INTO notifications (user_id, type, post_id, comment_id, actor_id) VALUES (?, ?, ?, ?, ?)`
 
 	_, err := m.DB.Exec(stmt, userID, ntype, postID, commentID, actorID)
 	return err
@@ -32,19 +30,18 @@ func (m *NotificationModel) Insert(userID, actorID int, ntype string, postID, co
 
 func (m *NotificationModel) GetUnreadCount(userID int) (int, error) {
 	var count int
-	stmt := `SELECT COUNT(*) FROM notifications 
-	WHERE user_id = ? AND is_read = 0`
+	stmt := `SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0`
 	err := m.DB.QueryRow(stmt, userID).Scan(&count)
 	return count, err
 }
 
 func (m *NotificationModel) GetAll(userID int) ([]*Notification, error) {
 	stmt := `SELECT n.id, n.type, n.post_id, n.comment_id, n.created, n.is_read,
-			u.id, u.name
-			FROM notifications n
-			JOIN users u ON n.actor_id = u.id
-			WHERE n.user_id = ?
-			ORDER BY n.created DESC`
+         u.id, u.name
+         FROM notifications n
+         JOIN users u ON n.actor_id = u.id
+         WHERE n.user_id = ?
+         ORDER BY n.created DESC`
 
 	rows, err := m.DB.Query(stmt, userID)
 	if err != nil {

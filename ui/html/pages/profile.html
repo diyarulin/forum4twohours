@@ -5,10 +5,19 @@
     <div class="moderation-link">
         <a href="/moderation">🚨 Moderation Panel</a>
     </div>
+    <div class="moderation-link">
+        <a href="/reports">🚨 Reports</a>
+    </div>
     {{end}}
     {{if eq .User.Role "admin"}}
     <div class="moderation-link">
         <a href='/admin/categories'>Manage Categories</a>
+    </div>
+    <div class="moderation-link">
+        <a href='/admin/users'>Manage Users</a>
+    </div>
+    <div class="moderation-link">
+        <a href='/admin/reports'>Manage Reports</a>
     </div>
     {{end}}
    
@@ -16,6 +25,12 @@
   {{with .User}}
   <p><strong>Name:</strong> {{.Name}}</p>
   <p><strong>Email:</strong> {{.Email}}</p>
+    <p><strong>Role:</strong> {{.Role}}</p>
+    {{if eq .Role "user"}}
+    <form action="/user/apply-moderator" method="POST">
+        <button type="submit">Apply to be Moderator</button>
+    </form>
+    {{end}}
   <p><strong>Password:</strong> **********</p>
   {{end}}
 <h2>Change Password</h2>

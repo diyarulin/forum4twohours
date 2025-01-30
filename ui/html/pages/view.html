@@ -1,91 +1,99 @@
+view.html
 {{define "title"}}Post #{{.Post.ID}}{{end}}
 
 {{define "main"}}
-    {{with .Post}}
-    <div class='snippet' style="width: 80%; margin: 0 auto; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-        <div class='metadata' style="display: flex; justify-content: space-between; align-items: center;">
-            <strong>{{.Title}}</strong>
-            <span>#{{.ID}}</span>
-        </div>
-        <pre style="white-space: pre-wrap; word-wrap: break-word;"><code>{{.Content}}</code></pre>
-        {{if .ImagePath}}
-        <div class='image'>
-            <img src="/static/upload/{{.ImagePath}}" alt="Image" style="max-width: 80%; height: auto; display: block; margin: 10px auto; border: 1px solid #ddd; border-radius: 5px;">
-        </div>
-        {{end}}
-        <div class='metadata'>
-            <strong>Category: {{.Category}}</strong>
-        </div>
-        <div class='metadata'>
-            <time>Created: {{humanDate .Created}}</time>
-        </div>
-        <div class='metadata'>
-            <time>Author: {{ .Author}}</time>
-        </div>
-        
-        <!-- Like/Dislike buttons for post (only for authenticated users) -->
+{{with .Post}}
+<div class='snippet' style="width: 80%; margin: 0 auto; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+    <div class='metadata' style="display: flex; justify-content: space-between; align-items: center;">
+        <strong>{{.Title}}</strong>
+        <span>#{{.ID}}</span>
+    </div>
+    <pre style="white-space: pre-wrap; word-wrap: break-word;"><code>{{.Content}}</code></pre>
+    {{if .ImagePath}}
+    <div class='image'>
+        <img src="/static/upload/{{.ImagePath}}" alt="Image" style="max-width: 80%; height: auto; display: block; margin: 10px auto; border: 1px solid #ddd; border-radius: 5px;">
+    </div>
+    {{end}}
+    <div class='metadata'>
+        <strong>Category: {{.Category}}</strong>
+    </div>
+    <div class='metadata'>
+        <time>Created: {{humanDate .Created}}</time>
+    </div>
+    <div class='metadata'>
+        <time>Author: {{ .Author}}</time>
+    </div>
+
+    <!-- Like/Dislike buttons for post (only for authenticated users.html) -->
+    {{if $.IsAuthenticated}}
+    <div style="margin-top: 10px;">
+        <form action="/post/like" method="post" style="display: inline;">
+            <input type="hidden" name="post_id" value="{{.ID}}">
+            <button type="submit">👍 {{.Likes}}</button>
+        </form>
+        <form action="/post/dislike" method="post" style="display: inline;">
+            <input type="hidden" name="post_id" value="{{.ID}}">
+            <button type="submit">👎 {{.Dislikes}}</button>
+        </form>
+    </div>
+    {{end}}
+</div>
+{{end}}
+
+<h3>Comments</h3>
+
+{{if .Comments}}
+<ul>
+    {{range .Comments}}
+    <li style="padding: 10px; border-bottom: 1px solid #ddd;">
+        <strong>{{.Author}}</strong> <em>{{humanDate .Created}}</em>
+        <p>{{.Content}}</p>
+
+        <!-- Like/Dislike buttons for comment (only for authenticated users.html) -->
         {{if $.IsAuthenticated}}
-        <div style="margin-top: 10px;">
-            <form action="/post/like" method="post" style="display: inline;">
-                <input type="hidden" name="post_id" value="{{.ID}}">
+        <div>
+            <form action="/comment/like" method="post" style="display: inline;">
+                <input type="hidden" name="comment_id" value="{{.ID}}">
                 <button type="submit">👍 {{.Likes}}</button>
             </form>
-            <form action="/post/dislike" method="post" style="display: inline;">
-                <input type="hidden" name="post_id" value="{{.ID}}">
+            <form action="/comment/dislike" method="post" style="display: inline;">
+                <input type="hidden" name="comment_id" value="{{.ID}}">
                 <button type="submit">👎 {{.Dislikes}}</button>
             </form>
         </div>
         {{end}}
-    </div>
-    {{end}}
 
-    <h3>Comments</h3>
-    
-    {{if .Comments}}
-        <ul>
-            {{range .Comments}}
-            <li style="padding: 10px; border-bottom: 1px solid #ddd;">
-                <strong>{{.Author}}</strong> <em>{{humanDate .Created}}</em>
-                <p>{{.Content}}</p>
-                
-                <!-- Like/Dislike buttons for comment (only for authenticated users) -->
-                {{if $.IsAuthenticated}}
-                <div>
-                    <form action="/comment/like" method="post" style="display: inline;">
-                        <input type="hidden" name="comment_id" value="{{.ID}}">
-                        <button type="submit">👍 {{.Likes}}</button>
-                    </form>
-                    <form action="/comment/dislike" method="post" style="display: inline;">
-                        <input type="hidden" name="comment_id" value="{{.ID}}">
-                        <button type="submit">👎 {{.Dislikes}}</button>
-                    </form>
-                </div>
-                {{end}}
-                
-                <!-- Edit and Delete buttons -->
-                <div style="margin-top: 10px;">
-                    {{if and $.User (eq .UserID $.User.ID)}}
-                    <form action="/comment/delete" method="post" style="display: inline;">
-                        <input type="hidden" name="comment_id" value="{{.ID}}">
-                        <input type="hidden" name="post_id" value="{{.PostID}}">
-                        <button type="submit" style="color: red;">Delete</button>
-                    </form>
-                    {{end}}
-                </div>
-            </li>
+        <!-- Edit and Delete buttons -->
+        <div style="margin-top: 10px;">
+            {{if and $.User (or (eq .UserID $.User.ID) (eq $.User.Role "admin"))}}
+            <form action="/comment/delete" method="post" style="display: inline;">
+                <input type="hidden" name="comment_id" value="{{.ID}}">
+                <input type="hidden" name="post_id" value="{{.PostID}}">
+                <button type="submit" style="color: red;">Delete</button>
+            </form>
             {{end}}
-        </ul>
-    {{else}}
-        <p>No comments yet. Be the first to comment!</p>
+
+        </div>
+    </li>
     {{end}}
-    {{if .IsAuthenticated}}
-    <h3>Add a Comment</h3>
-    <form action="/comments/add" method="post">
-        <input type="hidden" name="post_id" value="{{.Post.ID}}">
-        <input type="hidden" name="author" value="{{.User.Name}}">
-        <label for="content">Comment:</label><br>
-        <textarea id="content" name="content" rows="4" required></textarea><br><br>
-        <button type="submit">Add Comment</button>
-    </form>
-    {{end}}
+</ul>
+{{else}}
+<p>No comments yet. Be the first to comment!</p>
+
+{{end}}
+{{if .IsAuthenticated}}
+{{if eq .User.Role "moderator"}}
+<a href='/report/post/{{.Post.ID}}'>REPORT POST</a>
+{{end}}
+{{end}}
+{{if .IsAuthenticated}}
+<h3>Add a Comment</h3>
+<form action="/comments/add" method="post">
+    <input type="hidden" name="post_id" value="{{.Post.ID}}">
+    <input type="hidden" name="author" value="{{.User.Name}}">
+    <label for="content">Comment:</label><br>
+    <textarea id="content" name="content" rows="4" required></textarea><br><br>
+    <button type="submit">Add Comment</button>
+</form>
+{{end}}
 {{end}}

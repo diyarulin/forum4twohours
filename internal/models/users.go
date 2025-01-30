@@ -33,7 +33,8 @@ func (m *UserModel) Insert(name, email, password string) error {
 		return err
 	}
 
-	stmt := `INSERT INTO users (name, email, hashed_password, created, role) 
+	stmt := `INSERT INTO users
+    (name, email, hashed_password, created, role) 
 	         VALUES (?, ?, ?, DATETIME('now', 'localtime'), 'user')`
 
 	_, err = m.DB.Exec(stmt, name, email, string(hashedPassword))
@@ -43,7 +44,8 @@ func (m *UserModel) Insert(name, email, password string) error {
 		if errors.As(err, &sqliteError) {
 			// SQLite может возвращать ошибки, связанные с нарушением уникальности
 			// В этом примере мы ищем ошибку по тексту
-			if strings.Contains(sqliteError.Error(), "UNIQUE constraint failed: users.email") {
+			if strings.Contains(sqliteError.Error(), "UNIQUE constraint failed: users"+
+				".email") {
 				return ErrDuplicateEmail
 			}
 		}
@@ -58,7 +60,8 @@ func (m *UserModel) Authenticate(email, password string) (int, error) {
 	var id int
 	var hashedPassword []byte
 
-	stmt := "SELECT id, hashed_password FROM users WHERE email = ?"
+	stmt := "SELECT id, hashed_password FROM users" +
+		" WHERE email = ?"
 
 	err := m.DB.QueryRow(stmt, email).Scan(&id, &hashedPassword)
 	if err != nil {
@@ -110,7 +113,8 @@ func (m *UserModel) Get(id int) (*User, error) {
 	return u, nil
 }
 func (m *UserModel) GetAllUsers() ([]*User, error) {
-	stmt := `SELECT id, name, email, role FROM users`
+	stmt := `SELECT id, name, email, role FROM users
+`
 	rows, err := m.DB.Query(stmt)
 	if err != nil {
 		return nil, err
@@ -135,7 +139,8 @@ func (m *UserModel) GetAllUsers() ([]*User, error) {
 }
 
 func (m *UserModel) UpdatePassword(hashedPassword string, id int) error {
-	stmt := "UPDATE users SET hashed_password = ? WHERE id = ?"
+	stmt := "UPDATE users" +
+		" SET hashed_password = ? WHERE id = ?"
 	_, err := m.DB.Exec(stmt, hashedPassword, id)
 	if err != nil {
 		return err
@@ -148,7 +153,8 @@ func (m *UserModel) GetOrCreateOAuthUser(email, name, provider, provider_id stri
 
 	// Проверяем, существует ли пользователь с данным oauth_id и провайдером
 	err := m.DB.QueryRow(`
-        SELECT id FROM users 
+        SELECT id FROM users
+                  
         WHERE provider = ? AND provider_id = ?
     `, provider, provider_id).Scan(&userID)
 
@@ -158,7 +164,8 @@ func (m *UserModel) GetOrCreateOAuthUser(email, name, provider, provider_id stri
 
 	// Если пользователя нет, создаем нового
 	result, err := m.DB.Exec(`
-        INSERT INTO users (name, email, provider, provider_id, role, created, hashed_password) 
+        INSERT INTO users
+            (name, email, provider, provider_id, role, created, hashed_password) 
         VALUES (?, ?, ?, ?, 'user', DATETIME('now'), 'google')
     `, name, email, provider, provider_id)
 
@@ -171,11 +178,39 @@ func (m *UserModel) GetOrCreateOAuthUser(email, name, provider, provider_id stri
 }
 
 func (m *UserModel) PromoteUser(userID int) error {
-	_, err := m.DB.Exec("UPDATE users SET role = 'moderator' WHERE id = ?", userID)
+	_, err := m.DB.Exec("UPDATE users"+
+		" SET role = 'moderator' WHERE id = ?", userID)
 	return err
 }
 
 func (m *UserModel) DemoteUser(userID int) error {
-	_, err := m.DB.Exec("UPDATE users SET role = 'user' WHERE id = ?", userID)
+	_, err := m.DB.Exec("UPDATE users"+
+		" SET role = 'user' WHERE id = ?", userID)
 	return err
+}
+
+func (m *UserModel) ApplyForModerator(userID int) error {
+	stmt := `UPDATE users SET role = "pending_moderator" WHERE id = ? AND role = "user"`
+	_, err := m.DB.Exec(stmt, userID)
+	return err
+}
+
+func (m *UserModel) GetPendingModerators() ([]*User, error) {
+	stmt := `SELECT id, name, email, role FROM users WHERE role = 'pending_moderator' OR role = 'moderator'`
+	rows, err := m.DB.Query(stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*User
+	for rows.Next() {
+		u := &User{}
+		if err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.Role); err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+
+	return users, nil
 }

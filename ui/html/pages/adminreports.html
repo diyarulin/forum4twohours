@@ -1,7 +1,7 @@
-{{define "title"}}Reports{{end}}
+{{define "title"}}Admin Reports{{end}}
 
 {{define "main"}}
-<h2>Reports</h2>
+<h2>Unsolved Reports</h2>
 {{if .Reports}}
 <table>
     <tr>
@@ -14,7 +14,7 @@
     </tr>
     {{range .Reports}}
     <tr>
-        <td>#{{.ID}}</td>
+        <td><a href='/report/answer/{{.ID}}'>#{{.ID}}</a></td>
         <td><a href='/post/view/{{.PostID}}'>{{.PostID}}</a></td>
         <td>{{.ReporterID}}</td>
         <td>{{.Reason}}</td>

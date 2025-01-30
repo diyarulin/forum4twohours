@@ -44,14 +44,22 @@ func (app *application) routes() http.Handler {
 	mux.Handle("/post/approve", app.requireRole("moderator", http.HandlerFunc(app.approvePost)))
 
 	// Admin routes
-	mux.Handle("/user/promote", app.requireRole("admin", http.HandlerFunc(app.promoteUser)))
-	mux.Handle("/user/demote", app.requireRole("admin", http.HandlerFunc(app.demoteUser)))
+	mux.Handle("/admin/users/promote", app.requireRole("admin", http.HandlerFunc(app.promoteUser)))
+	mux.Handle("/admin/users/demote", app.requireRole("admin", http.HandlerFunc(app.demoteUser)))
 
-	mux.Handle("/report", app.requireRole("moderator", http.HandlerFunc(app.reportPost)))
-	mux.Handle("/reports", app.requireRole("admin", http.HandlerFunc(app.viewReports)))
+	mux.Handle("/report/post/", app.requireRole("moderator", http.HandlerFunc(app.reportPost)))
+	mux.Handle("/report/answer/", app.requireRole("admin", http.HandlerFunc(app.Answer)))
+
+	mux.Handle("/reports", (http.HandlerFunc(app.viewReports)))
+	mux.Handle("/admin/reports", app.requireRole("admin", http.HandlerFunc(app.viewAdminReports)))
+
 	mux.Handle("/admin/categories", app.requireRole("admin", http.HandlerFunc(app.manageCategories)))
 	mux.Handle("/admin/categories/add", app.requireRole("admin", http.HandlerFunc(app.addCategory)))
 	mux.Handle("/admin/categories/update", app.requireRole("admin", http.HandlerFunc(app.updateCategory)))
 	mux.Handle("/admin/categories/delete", app.requireRole("admin", http.HandlerFunc(app.deleteCategory)))
+
+	mux.Handle("/admin/users", app.requireRole("admin", http.HandlerFunc(app.manageUsers)))
+
+	mux.Handle("/user/apply-moderator", app.requireAuthentication(http.HandlerFunc(app.applyForModerator)))
 	return app.recoverPanic(app.logRequest(secureHeaders(mux)))
 }

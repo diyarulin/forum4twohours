@@ -62,6 +62,26 @@ type userLoginForm struct {
 	validator.Validator `form:"-"`
 }
 
+func (app *application) manageUsers(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		app.methodNotAllowed(w)
+		return
+	}
+	if r.URL.Path != "/admin/users" {
+		http.NotFound(w, r)
+		return
+	}
+	users, err := app.users.GetPendingModerators()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	data := app.newTemplateData(w, r)
+
+	data.Users = users
+	app.render(w, http.StatusOK, "users.html", data)
+}
+
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		app.methodNotAllowed(w)
@@ -91,8 +111,26 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
+	userID, err := app.getCurrentUser(r)
+	if err != nil && userID == 0 {
+		data.Categories = categories
+		data.IsAuthenticated = app.isAuthenticated(r)
+		app.render(w, http.StatusOK, "home.html", data)
+	} else if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	user, err := app.users.Get(userID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
 	data.Categories = categories
+	data.User = user
+	data.IsAuthenticated = app.isAuthenticated(r)
 	app.render(w, http.StatusOK, "home.html", data)
+
 }
 
 func (app *application) postView(w http.ResponseWriter, r *http.Request) {
@@ -458,6 +496,7 @@ func (app *application) profile(w http.ResponseWriter, r *http.Request) {
 
 	app.render(w, http.StatusOK, "profile.html", data)
 }
+
 func (app *application) changePassword(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
@@ -755,7 +794,6 @@ func (app *application) addComment(w http.ResponseWriter, r *http.Request) {
 	idParam := r.FormValue("post_id")
 	var id int
 	var err error
-	app.infoLog.Printf("ID is %s", idParam)
 
 	if idParam != "" {
 		id, err = strconv.Atoi(idParam)

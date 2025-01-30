@@ -1,0 +1,15 @@
+{{define "title"}}Answer Report{{end}}
+{{define "main"}}
+<form action='/report/answer/{{.Form.ReportID}}' method='POST'>
+    <div>
+        <label>Answer:</label>
+        {{with .Form.FieldErrors.answer}}
+        <label class='error'>{{.}}</label>
+        {{end}}
+        <textarea name='answer'>{{.Form.Answer}}</textarea>
+    </div>
+    <div>
+        <input type='submit' value='Submit Answer'>
+    </div>
+</form>
+{{end}}

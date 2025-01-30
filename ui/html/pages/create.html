@@ -1,17 +1,18 @@
+create.html
 {{define "title"}}Create a New Post{{end}}
 {{define "main"}}
 <form action='/post/create' method='POST' enctype="multipart/form-data">
     <div>
         <label>Title:</label>
         {{with .Form.FieldErrors.title}}
-            <label class='error'>{{.}}</label>
+        <label class='error'>{{.}}</label>
         {{end}}
         <input type='text' name='title' value='{{.Form.Title}}'>
     </div>
     <div>
         <label>Content:</label>
         {{with .Form.FieldErrors.content}}
-            <label class='error'>{{.}}</label>
+        <label class='error'>{{.}}</label>
         {{end}}
         <textarea name='content'>{{.Form.Content}}</textarea>
     </div>
@@ -19,18 +20,18 @@
         <label>Upload File:</label>
         <input type="file" name="image" />
         {{if .Form.ImagePath}}
-            <div>
-                <p>Uploaded Image:</p>
-                <img src="/static/upload/{{.Form.ImagePath}}" alt="Uploaded Image" style="max-width: 300px; max-height: 300px;">
-            </div>
+        <div>
+            <p>Uploaded Image:</p>
+            <img src="/static/upload/{{.Form.ImagePath}}" alt="Uploaded Image" style="max-width: 300px; max-height: 300px;">
+        </div>
         {{end}}
     </div>
     <div>
         <label for="Category">Category:</label>
         <select id="Category" name="Category" required class="form-control">
-          {{range .Categories}}
+            {{range .Categories}}
             <option value="{{.Name}}">{{.Name}}</option>
-          {{end}}
+            {{end}}
         </select><br><br>
     </div>
     <div>

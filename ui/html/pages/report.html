@@ -1,0 +1,15 @@
+{{define "title"}}Report Post{{end}}
+{{define "main"}}
+<form action='/report/post/{{.Form.PostID}}' method='POST'>
+    <div>
+        <label>Reason:</label>
+        {{with .Form.FieldErrors.reason}}
+        <label class='error'>{{.}}</label>
+        {{end}}
+        <input type='text' name='reason' value='{{.Form.Reason}}'>
+    </div>
+    <div>
+        <input type='submit' value='Report'>
+    </div>
+</form>
+{{end}}
