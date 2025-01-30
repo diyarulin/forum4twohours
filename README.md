@@ -47,12 +47,13 @@ Users can filter posts by:
 1. Clone the repository:
    ```sh
    git clone https://github.com/sterekba/forum.git
+   git switch check_merge
    cd forum
    ```
 2. Build and run with Docker:
    ```sh
-   docker build -t forum .
-   docker run -p 8080:8080 forum
+   sudo docker-compose build .
+   sudo docker-compose up
    ```
 3. Access the forum at `http://localhost:8080`
 
