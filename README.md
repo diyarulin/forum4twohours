@@ -61,7 +61,3 @@ Users can filter posts by:
    ```
 4. Access the forum at `http://localhost:8080`
 
-## Contributors
-- **Shyngys Terekbayev** ([GitHub](https://github.com/sterekba))
-- **Didar** ([GitHub](https://github.com/diyarulin))
-
